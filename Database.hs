@@ -18,7 +18,7 @@ type UserInfo = (UserName, EMailAddress, Password)
 type UserDB = Map.Map UserName (EMailAddress, Password, SellerInfo)
 
 data BookInfo =
-  BookInfo { isbn :: String, number :: Int, lowest :: Float, sellInfo :: SellerInfo } deriving (Show, Eq) 
+  BookInfo { isbn :: String, number :: Int, lowest :: Float, sellerInfo :: SellerInfo } deriving (Show, Eq) 
 
 type BookDB = Map.Map BookName BookInfo
 
