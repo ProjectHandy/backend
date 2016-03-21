@@ -6,19 +6,22 @@ type UserName = String
 type EMailAddress = String
 type Password = String
 
-data NotesTaken = None | Few | Heavy deriving (Show, Eq)
-data PaperQuality = Poor | Average | Good deriving (Show, Eq)
+data NotesTaken = Notes Int deriving (Show, Eq)
+data PaperQuality = Paper Int deriving (Show, Eq)
 type Price = Float
 
 type BookName = String
 
-type SellerInfo = Map.Map BookName (NotesTaken, PaperQuality, Price)
+type Info = (NotesTaken, PaperQuality, Price)
+type SellInfo = Map.Map UserName Info --for bookDB
+type SellerInfo = Map.Map BookName Info -- for UserDB
+
 type UserInfo = (UserName, EMailAddress, Password)
 
 type UserDB = Map.Map UserName (EMailAddress, Password, SellerInfo)
 
 data BookInfo =
-  BookInfo { isbn :: String, number :: Int, lowest :: Float, sellerInfo :: SellerInfo } deriving (Show, Eq) 
+  BookInfo { title :: String, number :: Int, lowest :: Float, sellInfo :: SellInfo } deriving (Show, Eq) 
 
 type BookDB = Map.Map BookName BookInfo
 
