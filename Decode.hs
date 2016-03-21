@@ -6,64 +6,72 @@ import qualified Data.Map.Strict as Map
 
 import Database
 
-data Action = Register | PostBookInfo deriving (Show, Eq)
+data Action = Register
+            | PostBookInfo
+            | Login
+            deriving (Show, Eq)
 
 data Value = VString String | VFloat Float deriving (Show, Eq)
 
 token :: String -> a -> ReadP a
 token s a = const a <$> string s
 
-bracket = between (satisfy (== '<')) (satisfy (== '>'))
-
 parseAction :: ReadP Action
-parseAction = bracket $
+parseAction =
   token "register" Register
-  <++ token "postBookInfo" PostBookInfo
+  <++ token "postbookinfo" PostBookInfo
+  <++ token "login" Login
 
-bracketAndString :: String -> ReadP String
-bracketAndString s = bracket $ string s
+parseStringliteral :: ReadP String
+parseStringliteral = between (satisfy (== '\"')) (satisfy (=='\"')) (munch1 (/= '\"'))
 
 parseString :: ReadP String
-parseString = bracket $ many1 $ satisfy isAlphaNum
+parseString =
+  let pred c = not (isSpace c) && c /= '}' && c /= '{' && c /= ',' && c /= ':' in
+  parseStringliteral
+  <++ (many1 $ satisfy pred)
 
-parseUserInfo_ :: ReadP String
-parseUserInfo_ = bracket $ many1 $ satisfy isAlphaNum
-
+parseOneField :: String -> ReadP String
+parseOneField key =
+  string key >>
+  satisfy (== ':') >>
+  skipSpaces >>
+  parseString >>= \s ->
+  return s
+  
 parseUserInfo :: ReadP UserInfo
 parseUserInfo =
-  bracketAndString "user" >>
-  satisfy (== '=') >>
-  parseUserInfo_ >>= \username ->
-  satisfy (== '&') >>
-  bracketAndString "pwd" >>
-  satisfy (== '=') >>
-  parseUserInfo_ >>= \password ->
-  return $ (username, "", password)
-{-
-parseFloat :: ReadP Float
-parseFloat = (\x -> read x :: Float) <$> many1 (satisfy (\x -> isDigit x || x == '.'))
-
-parseValue :: ReadP Value
-parseValue =
-  (VFloat <$> parseFloat) <++ (VString <$> many1 (satisfy isAlphaNum))
--}
+  parseOneField "\"user\"" >>= \username ->
+  satisfy (==',') >>
+  skipSpaces >>
+  option "" (parseOneField "\"email\"") >>= \email ->
+  optional (satisfy (== ',')) >>
+  skipSpaces >>
+  parseOneField "\"pwd\"" >>= \password ->
+  return (username, email, password)
 
 parsePair :: ReadP (String, String)
 parsePair =
   parseString >>= \key ->
-  satisfy (== '=') >>
+  satisfy (== ':') >>
+  skipSpaces >>
   parseString >>= \value ->
   return (key,value)
 
+sep :: ReadP ()
+sep = satisfy (== ',') >> skipSpaces
+
 parsePairList :: ReadP [(String,String)]
-parsePairList = sepBy parsePair $ satisfy (== '&')
+parsePairList = sepBy parsePair sep
 
 parseInput :: ReadP (Action, UserInfo, Map.Map String String)
 parseInput =
   parseAction >>= \action ->
   satisfy (== '?') >>
-  parseUserInfo >>= \userInfo ->
-  optional (satisfy (== '&')) >>
+  between (satisfy (== '{')) (satisfy (== '}'))
+  (parseUserInfo >>= \userInfo ->
+  optional sep >>
   parsePairList >>= \list ->
-  return (action, userInfo, Map.fromList list)
+  return (action, userInfo, Map.fromList list))
 
+test = readP_to_S parseInput "postbookinfo?{\"user\": \"cggong\", \"pwd\": \"sfdinu9i323\", \"isbn\": \"9783249237\", \"notes\": 3, \"price\": 6.3, \"notesdesc\": \"Some notes taken, but acceptable :)\"}"
