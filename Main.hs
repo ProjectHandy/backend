@@ -3,6 +3,7 @@ module Main where
 import qualified Data.Map.Strict as Map
 import Data.Maybe
 import Text.ParserCombinators.ReadP
+import System.Environment
 
 import Database
 import Decode
@@ -83,7 +84,7 @@ main = do
      let file = "db"
      dbString <- readFile file :: IO String
      let db = read dbString :: DataBase
-     request <- getContents :: IO String
+     request <- head <$> getArgs :: IO String
      let (reply, newdb) = update (request, db)
      putStrLn reply :: IO ()
      length dbString `seq` writeFile file (show newdb :: String)
