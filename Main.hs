@@ -3,7 +3,6 @@ module Main where
 import qualified Data.Map.Strict as Map
 import Data.Maybe
 import Text.ParserCombinators.ReadP
-import Data.Binary
 
 import Database
 import Decode
