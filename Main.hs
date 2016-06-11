@@ -3,6 +3,7 @@ module Main where
 import qualified Data.Map.Strict as Map
 import Data.Maybe
 import Text.ParserCombinators.ReadP
+import System.Environment
 
 import Database
 import Decode
@@ -76,3 +77,15 @@ update (s, database) =
              Just userinfo -> let (_, pwd',_) = userinfo in
                               if pwd == pwd' then ("msg", database) 
                               else ("{msg: incorrect password}", database)
+
+
+main :: IO ()
+main = do
+     let file = "db"
+     dbString <- readFile file :: IO String
+     let db = read dbString :: DataBase
+     request <- head <$> getArgs :: IO String
+     let (reply, newdb) = update (request, db)
+     putStrLn reply :: IO ()
+     length dbString `seq` writeFile file (show newdb :: String)
+     return ()
