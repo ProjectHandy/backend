@@ -44,8 +44,8 @@ parseUserInfo =
   parseOneField "\"user\"" >>= \username ->
   satisfy (==',') >>
   skipSpaces >>
-  option "" (parseOneField "\"email\"") >>= \email ->
-  optional (satisfy (== ',')) >>
+  parseOneField "\"email\"" >>= \email ->
+  satisfy (==',') >>
   skipSpaces >>
   parseOneField "\"pwd\"" >>= \password ->
   return (username, email, password)
@@ -74,4 +74,4 @@ parseInput =
   parsePairList >>= \list ->
   return (action, userInfo, Map.fromList list))
 
-test = readP_to_S parseInput "postbookinfo?{\"user\": \"cggong\", \"pwd\": \"sfdinu9i323\", \"isbn\": \"9783249237\", \"notes\": 3, \"price\": 6.3, \"notesdesc\": \"Some notes taken, but acceptable :)\"}"
+test = readP_to_S parseInput "postbookinfo?{\"user\": \"cggong\", \"email\": cggong@uchicago.edu, \"pwd\": \"sfdinu9i323\", \"isbn\": \"9783249237\", \"notes\": 3, \"price\": 6.3, \"notesdesc\": \"Some notes taken, but acceptable :)\"}"

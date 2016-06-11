@@ -10,7 +10,7 @@ data NotesTaken = Notes Int deriving (Show, Eq)
 data PaperQuality = Paper Int deriving (Show, Eq)
 type Price = Float
 
-type BookName = String
+type BookName = String -- bookName refers to the ISBN 
 
 type Info = (NotesTaken, PaperQuality, Price)
 type SellInfo = Map.Map UserName Info --for bookDB
@@ -18,7 +18,7 @@ type SellerInfo = Map.Map BookName Info -- for UserDB
 
 type UserInfo = (UserName, EMailAddress, Password)
 
-type UserDB = Map.Map UserName (EMailAddress, Password, SellerInfo)
+type UserDB = Map.Map EMailAddress (UserName, Password, SellerInfo)
 
 data BookInfo =
   BookInfo { title :: String, number :: Int, lowest :: Float, sellInfo :: SellInfo } deriving (Show, Eq) 
