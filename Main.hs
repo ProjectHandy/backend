@@ -56,15 +56,15 @@ getSellerInfo dict =
 update :: (String, DataBase) -> (String, DataBase)
 update (s, database) =
   case readP_to_S parseInput s of
-     []    -> ("{msg: parse error}", database)
+     []    -> ("{\"msg\": \"Error: username password mismatch\"}", database)
      (x:_) ->
        let (action, userInfo, dict) = fst x in
-       let db = userDB database in
+       let userdb = userDB database in
         case action of
          Register ->
-           let (username, _, _) = userInfo in
-           case Map.lookup username db of
-             Just _  -> ("{msg: this name is already registered}", database)
+           let (username, email, _) = userInfo in
+           case Map.lookup email db of
+             Just _  -> ("{\"msg\":\"Error: this email address has already been registered.\"}", database)
              _       -> ("msg", database { userDB = register userInfo db })
          PostBookInfo ->
            case postBookInfo userInfo dict database of
