@@ -1,6 +1,11 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
+
 module Database where
 
 import qualified Data.Map.Strict as Map
+import GHC.Generics
+import Data.Aeson
 
 type UserName = String
 type EMailAddress = String
@@ -10,20 +15,30 @@ data NotesTaken = Notes Int deriving (Show, Eq, Read)
 data PaperQuality = Paper Int deriving (Show, Eq, Read)
 type Price = Float
 
-type BookName = String -- bookName refers to the ISBN 
+type BookID = String -- bookID refers to the ISBN 
+type ID = Int -- this is the unique identifier for each item
 
-type Info = (NotesTaken, PaperQuality, Price)
-type SellInfo = Map.Map UserName Info --for bookDB
-type SellerInfo = Map.Map BookName Info -- for UserDB
+type Info = (ID, NotesTaken, PaperQuality, Price)
+
+data PropInfo = PropInfo { date :: String, time :: String, place :: String }
+                deriving (Show, Eq, Read, Generic)
+
+data Prop = Prop { id :: ID, buyer :: EMailAddress, seller :: EMailAddress, propInfo :: PropInfo, buyerToSeller :: Bool, chat :: Maybe String }
+            deriving (Show, Eq, Read)
+
+type TradeInfo = (Info, [Prop])
+type SellInfo = Map.Map EMailAddress Info --for bookDB
+type SellerInfo = Map.Map ID TradeInfo -- for UserDB
+type BuyerInfo = Map.Map ID TradeInfo
 
 type UserInfo = (UserName, EMailAddress, Password)
 
-type UserDB = Map.Map EMailAddress (UserName, Password, SellerInfo)
+type UserDB = Map.Map EMailAddress (UserName, Password, SellerInfo, BuyerInfo)
 
 data BookInfo =
-  BookInfo { title :: String, number :: Int, lowest :: Float, sellInfo :: SellInfo } deriving (Show, Eq, Read) 
+  BookInfo { identifier :: ID, title :: String, number :: Int, lowest :: Float, sellInfo :: SellInfo } deriving (Show, Eq, Read) 
 
-type BookDB = Map.Map BookName BookInfo
+type BookDB = Map.Map BookID BookInfo
 
 data DataBase =
   DataBase { userDB :: UserDB, bookDB :: BookDB } deriving (Show,Eq,Read)
@@ -36,3 +51,6 @@ initialBookDB = Map.empty
 
 initialDB :: DataBase
 initialDB = DataBase { userDB = initialUserDB, bookDB = initialBookDB }
+
+instance FromJSON PropInfo
+instance ToJSON PropInfo

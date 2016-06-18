@@ -21,34 +21,9 @@ data Action =
 
 data ActionInfo = Query String | Info (Map.Map String String) deriving (Show, Eq)
 
-{-    
-data SellAction =
-  Register
-  | PostBookInfo
-  | Login
-  | GetProp
-  deriving (Show, Eq)
-           
-data BuyAction =
-  MatchBook
-  | BuySearch
-  deriving (Show, Eq)-}
            
 token :: String -> a -> ReadP a
 token s a = const a <$> string s
-{-
-parseSellAction :: ReadP SellAction
-parseSellAction =
-  token "register" Register
-  <++ token "postbookinfo" PostBookInfo
-  <++ token "login" Login
-  <++ token "getprop" GetProp
-
-parseBuyAction :: ReadP BuyAction
-parseBuyAction =
-  token "matchbook" MatchBook
-  <++ token "buysearch" BuySearch
-  -}
 
 parseAction :: ReadP Action
 parseAction =
@@ -100,26 +75,6 @@ sep = satisfy (== ',') >> skipSpaces
 
 parsePairList :: ReadP [(String,String)]
 parsePairList = sepBy parsePair sep
-{-
--- this is for the input that require user information
-parseSellInput :: ReadP (SellAction, UserInfo, Map.Map String String)
-parseSellInput =
-  parseSellAction >>= \action ->
-  satisfy (== '?') >>
-  between (satisfy (== '{')) (satisfy (== '}'))
-  (parseUserInfo >>= \userInfo ->
-  optional sep >>
-  parsePairList >>= \list ->
-  return (action, userInfo, Map.fromList list))
-
--- this is for the buyer inquiry input
-parseBuyInput :: ReadP (BuyAction, Query)
-parseBuyInput =
-  parseBuyAction >>= \action ->
-  satisfy (== '?') >>
-  between (satisfy (== '{')) (satisfy (== '}')) parseString >>= \s ->
-  return (action, s)
--}
 
 parseActionInfo :: ReadP ActionInfo
 parseActionInfo =
