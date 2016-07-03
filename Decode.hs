@@ -78,8 +78,8 @@ parsePairList = sepBy parsePair sep
 
 parseActionInfo :: ReadP ActionInfo
 parseActionInfo =
-  (Query <$> parseString)
-  <++ (Info . Map.fromList <$> parsePairList)
+  (Info . Map.fromList <$> parsePairList)
+  <++ (Query <$> parseString)
   
 parseInput :: ReadP (Action, ActionInfo)
 parseInput =
