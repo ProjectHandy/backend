@@ -17,12 +17,18 @@ register :: UserInfo -> UserDB -> UserDB
 register (userName, email, password) =
   Map.insert email (userName, password, Map.empty, Map.empty)
 
+extractPwd :: EMailAddress -> DataBase -> Password
+extractPwd email db =
+  let Just (_,pwd,_,_) = Map.lookup email (userDB db) in pwd
+
 postBookInfo :: UserInfo -> Map.Map String String -> DataBase -> Maybe DataBase
 postBookInfo userInfo dict database =
-  let (_, email , _) = userInfo in
+  let (_, email,pwd) = userInfo in
   let genID = generateID database in
   let info = (\(_,b,c,d) -> (genID, b,c,d)) <$> getBookInfo dict in
   let isbn = Map.lookup "isbn" dict in
+  let pwd' = extractPwd email database in
+  if pwd' /= pwd then Nothing else
   case (info, isbn) of
     (Just info', Just isbn') -> 
        let id = first info' in
@@ -93,10 +99,10 @@ removeBook x db =
 update :: (String, DataBase) -> (String, DataBase)
 update (s, database) =
   case readP_to_S parseInput s of
-     []    -> ("{\"msg\": \"Error: parse error\"}", database)
+     []    -> ("{\"msg\":\"Error: parse error.\"}", database)
      (x:_) ->
        let (action, info) = fst x in
-       if not $ validPair $ fst x then (s, database)
+       if not $ validPair $ fst x then ("{\"msg\":\"Error: Not valid input.\"}", database)
        else 
        let userdb = userDB database
            bookdb = bookDB database
@@ -108,22 +114,22 @@ update (s, database) =
            let (_, email, _) = userInfo in
            case Map.lookup email userdb of
              Just _  -> ("{\"msg\":\"Error: this email address has already been registered.\"}", database)
-             _       -> ("msg", database { userDB = register userInfo userdb })
+             _       -> ("{\"msg\":\"register\"}", database { userDB = register userInfo userdb })
          PostBookInfo ->
            let Info dict = info in
            let userInfo = getUserInfo dict in
            case postBookInfo userInfo dict database of
-             Nothing -> ("{msg: Error}", database)
-             Just db -> ("msg", db)
+             Nothing -> ("{\"msg\":\"Error: incorrect password\"}", database)
+             Just db -> ("{\"msg\":\"postbookinfo\"}", db)
          Login -> 
            let Info dict = info in
            let userInfo = getUserInfo dict in
            let (_, email, pwd) = userInfo in
            case Map.lookup email userdb of
-             Nothing -> ("{msg: unregistered user}", database)
+             Nothing -> ("{\"msg\":\"Error: unregistered user\"}", database)
              Just userinfo -> let (_,pwd',_,_) = userinfo in
                               if pwd == pwd' then ("msg", database) 
-                              else ("{msg: incorrect password}", database)
+                              else ("{\"msg\":\"Error: incorrect password\"}", database)
          Propose -> 
            let (userdb, bookdb) = (userDB database, bookDB database) in
            let Info dict = info in 
@@ -135,26 +141,30 @@ update (s, database) =
            let Just flag = (\x -> if x == "true" then True else False) <$> Map.lookup "buyerToSeller" dict in
            let chat = Map.lookup "chat" dict in
            if flag then 
-           let Just sellerInfo = third <$> Map.lookup seller userdb in
-           let Just tradeInfo = Map.lookup id sellerInfo in
-           let propInfo' = map propInfo (snd tradeInfo) in
-           case propInfo' `intersect` decode_prop of
-             []    -> ("{msg: please provide new proposals for meeting}", database)
-             (x:_) -> ("{msg: meeting time is" ++ show x ++ "}", removeBook id database)
-           else ("{msg: buyer " ++ buyer ++ " please respond}", database)
+           let sellerInfo = third <$> Map.lookup seller userdb in
+           let tradeInfo = sellerInfo >>= (Map.lookup id) in
+           case (sellerInfo, tradeInfo) of
+             (Just sellerInfo, Just tradeInfo) -> 
+                let propInfo' = map propInfo (snd tradeInfo) in
+                case propInfo' `intersect` decode_prop of
+                    [] -> ("{\"msg\":\"please choose a time for meeting\"}", database)
+                    (x:_) -> ("{\"msg\": meeting time is" ++ show x ++ "}", removeBook id database)
+             (Nothing, _) -> ("{\"msg\": \"Error: seller does not exist!\"}", database)
+             (_, Nothing) -> ("{\"msg\": \"Error: id does not exist!\"}", database)
+           else ("{\"msg\": buyer " ++ buyer ++ " please respond}", database)
          -- need to convert to return string to json format
          MatchBook ->
            let Query s = info in
            let books = Map.toList $ Map.filter (\x -> title x == s) bookdb in
-           if books == [] then ("msg : {Error : cannot find the required book}", database)
+           if books == [] then ("{\"msg\":\"Error : cannot find the required book\"}", database)
            else ("books:" ++ foldr ((++) . show) "" books, database)
          BuySearch -> 
            let Query s = info in
            case Map.lookup s bookdb of
-              Nothing -> ("msg: {Error: cannot find the required book" ++ s ++ "}", database)
-              Just x -> ("msg: {book: isbn: " ++ s ++ show x ++"}", database) 
+              Nothing -> ("{\"msg\": \"Error: cannot find the required book\"" ++ s ++ "}", database)
+              Just x -> ("{\"msg\":\"buysearch\", \"book\": isbn: " ++ s ++ show x ++"}", database) 
 
-
+{-
 main :: IO ()
 main = do
      let file = "db"
@@ -165,3 +175,21 @@ main = do
      putStrLn reply :: IO ()
      length dbString `seq` writeFile file (show newdb :: String)
      return ()
+-}
+
+updateList :: [String] -> DataBase -> ([String], DataBase)
+updateList xs db =
+  case xs of
+    [] -> ([], db)
+    (x:xs') -> let (s, newdb) = update (x, db) in
+               let (ys, db') = updateList xs' newdb in
+               (s:ys, db')
+               
+main :: IO ()
+main = do
+  let inFile = "test_input"
+  let outFile = "test_output"
+  testString <- readFile inFile
+  let inputStr = lines testString
+  let (outputStr, newdb) = updateList inputStr initialDB
+  writeFile outFile $ unlines outputStr

@@ -33,6 +33,7 @@ parseAction =
   <++ token "getprop" GetProp
   <++ token "matchbook" MatchBook
   <++ token "buysearch" BuySearch
+  <++ token "propose" Propose
   
 parseStringliteral :: ReadP String
 parseStringliteral = between (satisfy (== '\"')) (satisfy (=='\"')) (munch1 (/= '\"'))
@@ -65,6 +66,7 @@ parseUserInfo =
 parsePair :: ReadP (String, String)
 parsePair =
   parseString >>= \key ->
+  skipSpaces >>
   satisfy (== ':') >>
   skipSpaces >>
   parseString >>= \value ->
@@ -88,9 +90,15 @@ parseInput =
   between (satisfy (== '{')) (satisfy (== '}')) parseActionInfo >>= \info ->
   return (action, info)
 
-test = readP_to_S parseInput "postbookinfo?{\"user\": \"cggong\", \"email\": cggong@uchicago.edu, \"pwd\": \"sfdinu9i323\", \"isbn\": \"9783249237\", \"notes\": 3, \"price\": 6.3, \"notesdesc\": \"Some notes taken, but acceptable :)\"}"
+test = readP_to_S parseInput "register?{\"user\": \"cggong\", \"email\" : \"cggong@uchicago.edu\", \"pwd\": \"329fjmsdjsdmfsd\"}"
 
 test1 = readP_to_S parseInput "matchbook?{iliad}"
+
+test2 = readP_to_S parseInput "login?{\"user\": \"cggong\", \"email\" : \"cggong@uchicago.edu\", \"pwd\": \"23rujewfmis0&token=osfj0jf02imfeowfsd\"}"
+
+test3 = readP_to_S parseInput "postbookinfo?{\"user\": \"cggong\", \"email\" : \"cggong@uchicago.edu\", \"pwd\": \"sfdinu9i323\", \"isbn\": \"9783249237\", \"notes\": 3, \"price\": 6.3, \"notesdesc\": \"Some notes taken, but acceptable :)\"}"
+
+test4 = readP_to_S parseInput "propose?{\"id\": 1, \"buyer\": \"alice\", \"seller\": \"cggong\", \"buyerToSeller\" : \"true\", \"props\": \"[{date: 20160401, time: 15:00, place: Reg}]\"}"
 
 -- postparsing check
 
@@ -102,7 +110,7 @@ userInfoCheck (Info map) = allMember map ["user", "email", "pwd"]
 
 bookInfoCheck (Query _) = False
 bookInfoCheck (Info map) = allMember map 
-                           ["bookname", "isbn", "notes", "paper", "price"]
+                           ["isbn", "notes", "paper", "price"]
 
 proposeCheck (Query _) = False
 proposeCheck (Info map) = allMember map ["id", "buyer", "phone", "props"]
