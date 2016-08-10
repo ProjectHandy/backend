@@ -4,7 +4,7 @@ import Text.ParserCombinators.ReadP
 import Data.Char
 import qualified Data.Map.Strict as Map
 
-import Database
+import qualified Database as D
 
 data Action =
   -- basic action
@@ -16,12 +16,12 @@ data Action =
   | Propose
   -- buyer action
   | MatchBook
-  | BuySearch
+  | MatchClass
+  | BuySearch 
     deriving (Show,Eq)
 
-data ActionInfo = Query String | Info (Map.Map String String) deriving (Show, Eq)
+type ActionInfo = Map.Map String String
 
-           
 token :: String -> a -> ReadP a
 token s a = const a <$> string s
 
@@ -52,7 +52,7 @@ parseOneField key =
   parseString >>= \s ->
   return s
   
-parseUserInfo :: ReadP UserInfo
+parseUserInfo :: ReadP D.UserInfo
 parseUserInfo =
   parseOneField "\"user\"" >>= \username ->
   satisfy (==',') >>
@@ -61,7 +61,7 @@ parseUserInfo =
   satisfy (==',') >>
   skipSpaces >>
   parseOneField "\"pwd\"" >>= \password ->
-  return (username, email, password)
+  return $ D.UserInfo {D.user = username, D.email = email, D.pwd = password, D.token = ""}
 
 parsePair :: ReadP (String, String)
 parsePair =
@@ -79,9 +79,7 @@ parsePairList :: ReadP [(String,String)]
 parsePairList = sepBy parsePair sep
 
 parseActionInfo :: ReadP ActionInfo
-parseActionInfo =
-  (Info . Map.fromList <$> parsePairList)
-  +++ (Query <$> parseString)
+parseActionInfo = Map.fromList <$> parsePairList
   
 parseInput :: ReadP (Action, ActionInfo)
 parseInput =
@@ -92,7 +90,7 @@ parseInput =
 
 test = readP_to_S parseInput "register?{\"user\": \"cggong\", \"email\" : \"cggong@uchicago.edu\", \"pwd\": \"329fjmsdjsdmfsd\"}"
 
-test1 = readP_to_S parseInput "matchbook?{iliad}"
+test1 = readP_to_S parseInput "matchbook?{indicator:iliad}"
 
 test2 = readP_to_S parseInput "login?{\"user\": \"cggong\", \"email\" : \"cggong@uchicago.edu\", \"pwd\": \"23rujewfmis0&token=osfj0jf02imfeowfsd\"}"
 
@@ -105,16 +103,14 @@ test4 = readP_to_S parseInput "propose?{\"id\": 1, \"buyer\": \"alice\", \"selle
 allMember :: Ord k => Map.Map k a -> [k] -> Bool
 allMember m xs = all (flip Map.member m) xs
 
-userInfoCheck (Query _) = False
-userInfoCheck (Info map) = allMember map ["user", "email", "pwd"]
+userInfoCheck map = allMember map ["user", "email", "pwd"]
+bookInfoCheck map = allMember map ["isbn", "notes", "paper", "price"]
+proposeCheck map = allMember map ["id", "buyer", "phone", "props"]
+getPropCheck map = allMember map ["email"]
+matchBookCheck map = allMember map ["indicator"]
+buySearchCheck map = allMember map ["isbn"]
+matchClassCheck map = allMember map ["indicator"]
 
-bookInfoCheck (Query _) = False
-bookInfoCheck (Info map) = allMember map 
-                           ["isbn", "notes", "paper", "price"]
-
-proposeCheck (Query _) = False
-proposeCheck (Info map) = allMember map ["id", "buyer", "phone", "props"]
- 
 validPair :: (Action, ActionInfo) -> Bool
 validPair (action, info) =
   case action of
@@ -122,4 +118,7 @@ validPair (action, info) =
      Login        -> userInfoCheck info
      PostBookInfo -> bookInfoCheck info
      Propose      -> proposeCheck info
-     _            -> True
+     GetProp      -> getPropCheck info
+     MatchBook    -> matchBookCheck info
+     MatchClass   -> matchClassCheck info
+     BuySearch    -> buySearchCheck info
