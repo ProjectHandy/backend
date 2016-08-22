@@ -23,7 +23,7 @@ extractPwd :: EMailAddress -> DataBase -> Password
 extractPwd email db =
   let Just (userInfo,_,_) = Map.lookup email (userDB db) in pwd userInfo
 
-postBookInfo :: UserInfo -> Map.Map String String -> DataBase -> Maybe DataBase
+postBookInfo :: UserInfo -> Map.Map String String -> DataBase -> Maybe (ID, DataBase)
 postBookInfo userInfo dict database =
   let (email',pwd') = (email userInfo, pwd userInfo) in
   let genID = generateID database in
@@ -40,7 +40,7 @@ postBookInfo userInfo dict database =
        let new_userdb = Map.adjust foo email' userdb in
        let bar bookinfo = bookinfo {books = Map.insert genID (email',info') (books bookinfo)} in
        let new_bookdb = Map.adjust bar isbn' bookdb in
-       Just $ database { userDB = new_userdb, bookDB = new_bookdb }
+       Just (genID, database { userDB = new_userdb, bookDB = new_bookdb })
     _ -> Nothing
     
 generateID :: DataBase -> ID
@@ -125,7 +125,7 @@ update (s, database) =
            let userInfo = getUserInfo dict in
            case postBookInfo userInfo dict database of
              Nothing -> ("{\"msg\":\"Error: incorrect password\"}", database, Nothing)
-             Just db -> ("{\"msg\":\"postbookinfo\"}", db, Nothing)
+             Just (id,db) -> ("{\"msg\":\"postbookinfo\", \"id\":" ++ show id ++"}", db, Nothing)
          D.Login -> 
            let userInfo = getUserInfo dict in
            let (em, pd) = (email userInfo, pwd userInfo) in
