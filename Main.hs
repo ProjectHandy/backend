@@ -29,16 +29,26 @@ postBookInfo userInfo dict database =
   let genID = generateID database in
   let info = (\info -> info {bookid = genID}) <$> getBookInfo dict in
   let isbn = Map.lookup "isbn" dict in
+  let title = Map.lookup "title" dict in
+  let author = Map.lookup "author" dict in
   let pwd'' = extractPwd email' database in
   if pwd'' /= pwd' then Nothing else
-  case (info, isbn) of
-    (Just info', Just isbn') -> 
+  case (info, isbn, author, title) of
+    (Just info', Just isbn', Just author', Just title') -> 
        let id = bookid info' in
        let sellerInfo = (info', Nothing) in
        let (userdb, bookdb) = (userDB database, bookDB database) in
        let foo (userInfo, (m,seller), buyer) = (userInfo, (m, Map.insert id sellerInfo seller), buyer) in    
        let new_userdb = Map.adjust foo email' userdb in
-       let bar bookinfo = bookinfo {books = Map.insert genID (email',info') (books bookinfo)} in
+       let bar bookinfo =
+             if Map.member isbn' bookdb
+             then
+               let curPrice = price info' in
+               if curPrice > highest bookinfo then bookinfo {books = Map.insert genID (email',info') (books bookinfo), highest = curPrice}
+               else if curPrice < lowest bookinfo then bookinfo {books = Map.insert genID (email',info') (books bookinfo), lowest = curPrice}
+               else bookinfo {books = Map.insert genID (email',info') (books bookinfo)}
+             else BookInfo {books = Map.singleton genID (email',info'), isbn = isbn', title = title', author = author', highest = price info', lowest = price info'}
+       in
        let new_bookdb = Map.adjust bar isbn' bookdb in
        Just (genID, database { userDB = new_userdb, bookDB = new_bookdb })
     _ -> Nothing
