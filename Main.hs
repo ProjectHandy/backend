@@ -41,15 +41,15 @@ postBookInfo userInfo dict database =
        let foo (userInfo, (m,seller), buyer) = (userInfo, (m, Map.insert id sellerInfo seller), buyer) in    
        let new_userdb = Map.adjust foo email' userdb in
        let bar bookinfo =
-             if Map.member isbn' bookdb
-             then
                let curPrice = price info' in
                if curPrice > highest bookinfo then bookinfo {books = Map.insert genID (email',info') (books bookinfo), highest = curPrice}
                else if curPrice < lowest bookinfo then bookinfo {books = Map.insert genID (email',info') (books bookinfo), lowest = curPrice}
                else bookinfo {books = Map.insert genID (email',info') (books bookinfo)}
-             else BookInfo {books = Map.singleton genID (email',info'), isbn = isbn', title = title', author = author', highest = price info', lowest = price info'}
        in
-       let new_bookdb = Map.adjust bar isbn' bookdb in
+       let new_bookdb =
+             if Map.member isbn' bookdb then Map.adjust bar isbn' bookdb
+             else let item = BookInfo {books = Map.singleton genID (email',info'), isbn = isbn', title = title', author = author', highest = price info', lowest = price info'} in Map.insert isbn' item bookdb
+       in
        Just (genID, database { userDB = new_userdb, bookDB = new_bookdb })
     _ -> Nothing
     
