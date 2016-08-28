@@ -11,8 +11,11 @@ end
 
 set :port, 8080
 
-post "/handy" do
+post "/handy/:action" do
   request.body.rewind
-  data = request.body.read
-  syscall("./Main '" + data + "'")
+  data = params["action"] + "?" + request.body.read
+  puts "data=" + data
+  ret = syscall("./Main '" + data + "'")
+  puts "ret=" + ret
+  ret
 end

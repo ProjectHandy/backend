@@ -135,7 +135,7 @@ update (s, database) =
            let userInfo = getUserInfo dict in
            case postBookInfo userInfo dict database of
              Nothing -> ("{\"msg\":\"Error: incorrect password\"}", database, Nothing)
-             Just (id,db) -> ("{\"msg\":\"postbookinfo\", \"id\":" ++ show id ++"}", db, Nothing)
+             Just (id,db) -> ("{\"msg\":\"postbookinfo\", \"id\":" ++ show (show id) ++"}", db, Nothing)
          D.Login -> 
            let userInfo = getUserInfo dict in
            let (em, pd) = (email userInfo, pwd userInfo) in
@@ -186,7 +186,7 @@ update (s, database) =
            let bookDict = Map.filter (\x -> title x == name) bookdb in
            case Map.null bookDict of
               True -> ("{\"msg\":\"Error: cannot find any book with title " ++ name ++ "\"}", database, Nothing)
-              _    -> ("{\"msg\":\"matchbook\",\"items\":" ++ (tail$ C.unpack $ encode $ Map.elems bookDict), database, Nothing)
+              _    -> ("{\"msg\":\"matchbook\",\"items\":" ++ show (tail$ C.unpack $ encode $ Map.elems bookDict) ++ "}", database, Nothing)
          D.GetProp ->
            let Just email = Map.lookup "email" dict in
            case Map.lookup email userdb of
@@ -204,18 +204,18 @@ update (s, database) =
                              (s,new_db, Just (token $ first userInfo, s))
                                     
 
-{-
+
 main :: IO ()
 main = do
      let file = "db"
      dbString <- readFile file :: IO String
      let db = read dbString :: DataBase
      request <- head <$> getArgs :: IO String
-     let (reply, newdb) = update (request, db)
+     let (reply, newdb, _) = update (request, db)
      putStrLn reply :: IO ()
      length dbString `seq` writeFile file (show newdb :: String)
      return ()
--}
+
 
 updateList :: [String] -> DataBase -> ([String], DataBase)
 updateList xs db =
@@ -224,7 +224,7 @@ updateList xs db =
     (x:xs') -> let (s, newdb,_) = update (x,db) in
                let (ys, db') = updateList xs' newdb in
                (s:ys, db')
-               
+{-               
 main :: IO ()
 main = do
   let inFile = "test_input"
@@ -233,3 +233,4 @@ main = do
   let inputStr = lines testString
   let (outputStr, newdb) = updateList inputStr initialDB
   writeFile outFile $ unlines outputStr
+-}
