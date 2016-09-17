@@ -186,7 +186,7 @@ update (s, database) =
            let bookDict = Map.filter (\x -> title x == name) bookdb in
            case Map.null bookDict of
               True -> ("{\"msg\":\"Error: cannot find any book with title " ++ name ++ "\"}", database, Nothing)
-              _    -> ("{\"msg\":\"matchbook\",\"items\":" ++ show (tail$ C.unpack $ encode $ Map.elems bookDict) ++ "}", database, Nothing)
+              _    -> ("{\"msg\":\"matchbook\",\"items\":" ++ (C.unpack $ encode $ Map.elems bookDict) ++ "}", database, Nothing)
          D.GetProp ->
            let Just email = Map.lookup "email" dict in
            case Map.lookup email userdb of
