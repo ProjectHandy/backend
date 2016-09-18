@@ -135,7 +135,11 @@ update (s, database) =
            let userInfo = getUserInfo dict in
            case postBookInfo userInfo dict database of
              Nothing -> ("{\"msg\":\"Error: incorrect password\"}", database, Nothing)
-             Just (id,db) -> ("{\"msg\":\"postbookinfo\", \"id\":" ++ show (show id) ++"}", db, Nothing)
+             Just (id,db) -> ("{\"msg\":\"postbookinfo\",\"username\":"
+                              ++ show (user userInfo)
+                              ++ ",\"email\":"
+                              ++ show (email userInfo)
+                              ++ ",\"id\":" ++ show (show id) ++"}", db, Nothing)
          D.Login -> 
            let userInfo = getUserInfo dict in
            let (em, pd) = (email userInfo, pwd userInfo) in
