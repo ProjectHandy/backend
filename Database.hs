@@ -14,7 +14,13 @@ type Password = String
 type BookID = String -- bookID refers to the ISBN 
 type ID = Int -- this is the unique identifier for each item
 
-data Info = Info { bookid :: ID, note :: Int, paper :: Int, price :: Float} deriving (Show, Eq, Read, Generic)
+data Info = Info {sellerName :: UserName,
+                  sellerEmail :: EMailAddress,
+                  bookid :: ID,
+                  note :: Int,
+                  paper :: Int,
+                  price :: Float}
+          deriving (Show, Eq, Read, Generic)
 
 data PropInfo = PropInfo { date :: String, time :: String, place :: String }
                 deriving (Show, Eq, Read, Generic)

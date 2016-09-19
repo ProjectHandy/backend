@@ -66,13 +66,17 @@ getBookInfo dict =
   let notes = Map.lookup "notes" dict in
   let paper = Map.lookup "paper" dict in
   let price = Map.lookup "price" dict in
-  case (notes, paper, price) of
-    (Just notes, Just paper, Just price) ->
+  let seller = Map.lookup "user" dict in
+  let email = Map.lookup "email" dict in
+  case (notes, paper, price, seller, email) of
+    (Just notes, Just paper, Just price, Just seller, Just email) ->
       -- put dummy value for id here
       Just $ Info {bookid = -1,
                    note = read notes :: Int,
                    paper = read paper :: Int,
-                   price = read price :: Float}
+                   price = read price :: Float,
+                   sellerName = seller,
+                   sellerEmail = email}
     _                                             -> Nothing
 
 getUserInfo :: Map.Map String String -> UserInfo
