@@ -34,9 +34,16 @@ parseAction =
   <++ token "matchbook" MatchBook
   <++ token "buysearch" BuySearch
   <++ token "propose" Propose
-  
+
+isSpecial c = elem c ['"', '\\']
+
+notSpecial = not <$> isSpecial
+
+parseStringlitInside :: ReadP Char
+parseStringlitInside = satisfy notSpecial <++ (char '\\' *> satisfy (const True))
+
 parseStringliteral :: ReadP String
-parseStringliteral = between (satisfy (== '\"')) (satisfy (=='\"')) (munch1 (/= '\"'))
+parseStringliteral = between (satisfy (== '\"')) (satisfy (=='\"')) (many parseStringlitInside)
 
 parseString :: ReadP String
 parseString =
@@ -96,7 +103,7 @@ test2 = readP_to_S parseInput "login?{\"user\": \"cggong\", \"email\" : \"cggong
 
 test3 = readP_to_S parseInput "postbookinfo?{\"user\": \"cggong\", \"email\" : \"cggong@uchicago.edu\", \"pwd\": \"sfdinu9i323\", \"isbn\": \"9783249237\", \"notes\": 3, \"price\": 6.3, \"notesdesc\": \"Some notes taken, but acceptable :)\"}"
 
-test4 = readP_to_S parseInput "propose?{\"id\": 1, \"buyer\": \"alice\", \"seller\": \"cggong\", \"buyerToSeller\" : \"true\", \"props\": \"[{date: 20160401, time: 15:00, place: Reg}]\"}"
+test4 = readP_to_S parseInput "propose?{\"id\": 1, \"buyer\": \"alice\", \"seller\": \"cggong\", \"buyerToSeller\" : \"true\", \"props\": \"[{date: 20160401, time: 15:00, place: \\\"Reg}]\"}"
 
 -- postparsing check
 
