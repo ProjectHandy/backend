@@ -18,6 +18,7 @@ require 'open3'
 require 'net/http'
 require 'uri'
 require 'base64'
+require 'fileutils'
 
 def syscall(*cmd)
   begin
@@ -27,14 +28,32 @@ def syscall(*cmd)
   end
 end
 
+class String
+  def strip_trailing_eol
+    slice!(0..-(1 + $/.size))
+  end
+end
+
 set :port, 8080
 
 post "/handy/:action" do
   request.body.rewind
   data = params["action"] + "?" + request.body.read
   puts "data=" + data
-  ret = syscall("./Main '" + data + "'")
-  puts "ret=" + ret
+  # ret = syscall("./Main '" + data + "'")
+  FileUtils.cp("db", "db_bak")
+  stdout, status = Open3.capture2("./Main '#{data}'")
+  ret = stdout.strip_trailing_eol
+  if status.success?
+    puts "ret=#{ret}"
+  else
+    if File.size?("db")
+      puts "Main failed but database is not lost, size=#{File.size?("db")}"
+    else
+      FileUtils.cp("db_bak", "db")
+      puts "Database lost, use backup database"
+    end
+  end
   ret
 end
 

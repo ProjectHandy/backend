@@ -154,7 +154,7 @@ update (s, database) =
                                     else ("{\"msg\":\"Error: incorrect password\"}", database, Nothing)
          D.Propose -> 
            let Just id = read <$> Map.lookup "id" dict in
-           let Just prop = Map.lookup "prop" dict in
+           let Just prop = Map.lookup "props" dict in
            let Just decode_prop = decode (C.pack prop) :: Maybe [PropInfo] in
            let Just seller = Map.lookup "seller" dict in
            let Just buyer = Map.lookup "buyer" dict in
