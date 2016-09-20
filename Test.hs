@@ -1,5 +1,7 @@
 module Test where
 
+import Text.ParserCombinators.ReadP
+
 import Database
 import Decode
 import Main
@@ -20,3 +22,8 @@ result2 = update (inputPost1, db1)
 inputMBook2 = "matchbook?{\"user\":\"cggong\",\"pwd\":\"abc\",\"email\":\"cggong@uchicago.edu\",\"indicator\":\"Iliad\"}"
 result3 = update (inputMBook2, db2)
 (ret2, db3, _) = result3
+
+str = "[{\"time\":\"21:21\",\"date\":\"20001202\",\"place\":\"Good\"}]"
+inputProp3 = "propose?{\"props\":\"[{\\\"time\\\":\\\"21:21\\\",\\\"date\\\":\\\"20001202\\\",\\\"place\\\":\\\"Good\\\"}]\",\"pwd\":\"abc\",\"id\":\"0\",\"phone\":\"312314242\",\"buyer\":\"cggong\",\"email\":\"cggong@uchicago.edu\",\"seller\":\"cggong@uchicago.edu\",\"buyerToSeller\":\"true\"}"
+result4 = update (inputProp3, db3)
+(ret3,db4,_) = result4

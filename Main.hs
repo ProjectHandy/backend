@@ -161,10 +161,11 @@ update (s, database) =
            let Just flag = (\x -> if x == "true" then True else False) <$> Map.lookup "buyerToSeller" dict in
            let chat = Map.lookup "chat" dict in
            if flag then 
+           let userInfo = first <$> Map.lookup seller userdb in
            let sellerInfo = second <$> Map.lookup seller userdb in
            let tradeInfo = (snd <$> sellerInfo) >>= (Map.lookup id) in
-           case (sellerInfo, tradeInfo) of
-             (Just sellerInfo, Just tradeInfo) -> 
+           case (sellerInfo, tradeInfo, userInfo) of
+             (Just sellerInfo, Just tradeInfo, Just userInfo) -> 
                 case snd tradeInfo of
                    Nothing -> let bookinfo = fst tradeInfo in
                               let t = (bookinfo, Just $ Prop {Database.id = id, buyer = buyer, seller = seller, buyerToSeller = flag, chat = chat, propInfo = decode_prop}) in
@@ -177,11 +178,17 @@ update (s, database) =
                                  let t = (bookinfo, Just $ Prop {Database.id = id, buyer = buyer, seller = seller, buyerToSeller = flag, chat = chat, propInfo = decode_prop}) in
                                  let modify (userInfo, (_,s), b) = (userInfo, (Just t,s), b) in
                                  let new_userdb = Map.adjust modify seller userdb in
-                                 ("{\"msg\":\"please choose a time for meeting\"}", database {userDB = new_userdb}, Nothing)
+                                 let notification = Just ("Please choose a time for meeting.", token userInfo) in
+                                 ("{\"msg\":\"please choose a time for meeting\"}", database {userDB = new_userdb}, notification)
                            (x:_) -> ("{\"msg\": meeting time is" ++ show x ++ "}", removeBook id database, Nothing)
-             (Nothing, _) -> ("{\"msg\": \"Error: seller does not exist!\"}", database, Nothing)
-             (_, Nothing) -> ("{\"msg\": \"Error: id does not exist!\"}", database, Nothing)
-           else ("{\"msg\": buyer " ++ buyer ++ " please respond}", database, Nothing)
+             (Nothing, _,_) -> ("{\"msg\": \"Error: seller does not exist!\"}", database, Nothing)
+             (_, Nothing,_) -> ("{\"msg\": \"Error: id does not exist!\"}", database, Nothing)
+           else 
+              case first <$> Map.lookup buyer userdb of
+                Nothing -> ("{\"msg\":\"buyer does not exist!\"}", database, Nothing)
+                Just userInfo -> 
+                      let notification = Just ("buyer " ++ buyer ++ " please respond.", token userInfo) in
+                      ("{\"msg\": buyer " ++ buyer ++ " please respond}", database, notification)
          D.BuySearch ->
            let Just isbn = Map.lookup "isbn" dict in
            case Map.lookup isbn bookdb of
