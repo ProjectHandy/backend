@@ -1,11 +1,12 @@
 require 'apnotic'
 
-apns_connection = Apnotic::Connection.new(cert_path: "apns_certificate.pem", cert_pass: "pass")
+apns_connection = Apnotic::Connection.new(cert_path: "apns_certificate.pem", cert_pass: "")
 
 def send_apns(token, msg)
   notification       = Apnotic::Notification.new(token)
   notification.alert = msg
   apns_connection.push(notification)
+  puts "Notification sent, token=#{token}, msg=#{msg}"
 end
 
 at_exit do
@@ -18,12 +19,11 @@ require 'open3'
 require 'net/http'
 require 'uri'
 require 'base64'
+require 'fileutils'
 
-def syscall(*cmd)
-  begin
-    stdout, stderr, status = Open3.capture3(*cmd)
-    status.success? && stdout.slice!(0..-(1 + $/.size)) # strip trailing eol
-  rescue
+class String
+  def strip_trailing_eol
+    slice!(0..-(1 + $/.size))
   end
 end
 
@@ -33,8 +33,23 @@ post "/handy/:action" do
   request.body.rewind
   data = params["action"] + "?" + request.body.read
   puts "data=" + data
-  ret = syscall("./Main '" + data + "'")
-  puts "ret=" + ret
+  FileUtils.cp("db", "db_bak")
+  stdout, status = Open3.capture2("./Main '#{data}'")
+  reply_obj = JSON.parse(stdout)  
+  ret = reply_obj["reply"]
+  notif = reply_obj["notif"]
+  puts "ret=#{ret}"
+  puts "notif=#{notif}"
+  if status.success?
+    send_apns(notif['token'], notif['contents']) if notif
+  else
+    if File.size?("db")
+      puts "Main failed but database is not lost, size=#{File.size?("db")}"
+    else
+      FileUtils.cp("db_bak", "db")
+      puts "Database lost, use backup database"
+    end
+  end
   ret
 end
 

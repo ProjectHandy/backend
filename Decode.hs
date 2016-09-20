@@ -105,6 +105,8 @@ test3 = readP_to_S parseInput "postbookinfo?{\"user\": \"cggong\", \"email\" : \
 
 test4 = readP_to_S parseInput "propose?{\"id\": 1, \"buyer\": \"alice\", \"seller\": \"cggong\", \"buyerToSeller\" : \"true\", \"props\": \"[{date: 20160401, time: 15:00, place: \\\"Reg}]\"}"
 
+test5 = readP_to_S parseInput "propose?{\"props\":\"[{\\\"time\\\":\\\"13:58\\\",\\\"date\\\":\\\"20001202\\\",\\\"place\\\":\\\"He \\\"}]\",\"pwd\":\"abc\",\"id\":\"0\",\"phone\":\"312314242\",\"buyer\":\"cggong@uchicago.edu\",\"user\":\"cggong\",\"email\":\"cggong@uchicago.edu\",\"seller\":\"cggong@uchicago.edu\",\"buyerToSeller\":\"true\"}"
+
 -- postparsing check
 
 allMember :: Ord k => Map.Map k a -> [k] -> Bool

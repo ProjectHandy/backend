@@ -3,6 +3,8 @@
 module Main where
 
 import qualified Data.Map.Strict as Map
+import qualified Data.HashMap.Strict as HMap
+import qualified Data.Text as Text
 import Data.Maybe
 import Text.ParserCombinators.ReadP
 import System.Environment
@@ -154,7 +156,7 @@ update (s, database) =
                                     else ("{\"msg\":\"Error: incorrect password\"}", database, Nothing)
          D.Propose -> 
            let Just id = read <$> Map.lookup "id" dict in
-           let Just prop = Map.lookup "prop" dict in
+           let Just prop = Map.lookup "props" dict in
            let Just decode_prop = decode (C.pack prop) :: Maybe [PropInfo] in
            let Just seller = Map.lookup "seller" dict in
            let Just buyer = Map.lookup "buyer" dict in
@@ -226,8 +228,12 @@ main = do
      dbString <- readFile file :: IO String
      let db = read dbString :: DataBase
      request <- head <$> getArgs :: IO String
-     let (reply, newdb, _) = update (request, db)
-     putStrLn reply :: IO ()
+     let (reply, newdb, maybeNotif) = update (request, db)
+     let notifObj = case maybeNotif of
+           Just (token, contents) -> jsslobj [("token", token), ("contents", contents)]
+           _ -> Bool False
+     let replyObj = jsobj [("reply", String (Text.pack reply)), ("notif", notifObj)]
+     C.putStrLn (encode replyObj) :: IO ()
      length dbString `seq` writeFile file (show newdb :: String)
      return ()
 
@@ -236,7 +242,7 @@ updateList :: [String] -> DataBase -> ([String], DataBase)
 updateList xs db =
   case xs of
     [] -> ([], db)
-    (x:xs') -> let (s, newdb,_) = update (x,db) in
+    (x:xs') -> let (s, newdb, _) = update (x,db) in
                let (ys, db') = updateList xs' newdb in
                (s:ys, db')
 {-               
@@ -249,3 +255,18 @@ main = do
   let (outputStr, newdb) = updateList inputStr initialDB
   writeFile outFile $ unlines outputStr
 -}
+
+test = decode "{\"foo\": 123}" :: Maybe Value
+
+test2 = Just (Object (HMap.fromList [("foo",Number 123.0)]))
+
+jsobj :: [(Text.Text, Value)] -> Value
+jsobj = Object . HMap.fromList
+
+jssobj :: [(Text.Text, Text.Text)] -> Value
+jssobj = jsobj . fmap (fmap String)
+
+jsslobj :: [(Text.Text, String)] -> Value
+jsslobj = jssobj . fmap (fmap Text.pack)
+
+test3 = jssobj [("1","2")]
