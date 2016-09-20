@@ -171,16 +171,17 @@ update (s, database) =
                 case snd tradeInfo of
                    Nothing -> let bookinfo = fst tradeInfo in
                               let t = (bookinfo, Just $ Prop {Database.id = id, buyer = buyer, seller = seller, buyerToSeller = flag, chat = chat, propInfo = decode_prop}) in
-                          let modify (userInfo, (_,s), b) = (userInfo, (Just t,s), b) in
-                          let new_userdb = Map.adjust modify seller userdb in
-                          ("{\"msg\":\"please choose a time for meeting\"}", database {userDB = new_userdb}, Nothing)
+                              let modify (userInfo, (_,s), b) = (userInfo, (Just t,s), b) in
+                              let new_userdb = Map.adjust modify seller userdb in
+                              let notification = Just (token userInfo, "Please choose a time for meeting.") in
+                              ("{\"msg\":\"please choose a time for meeting\"}", database {userDB = new_userdb}, notification)
                    Just prop ->
                        case propInfo prop `intersect` decode_prop of
                            [] -> let (bookinfo, _) = tradeInfo in 
                                  let t = (bookinfo, Just $ Prop {Database.id = id, buyer = buyer, seller = seller, buyerToSeller = flag, chat = chat, propInfo = decode_prop}) in
                                  let modify (userInfo, (_,s), b) = (userInfo, (Just t,s), b) in
                                  let new_userdb = Map.adjust modify seller userdb in
-                                 let notification = Just ("Please choose a time for meeting.", token userInfo) in
+                                 let notification = Just (token userInfo, "Please choose a time for meeting.") in
                                  ("{\"msg\":\"please choose a time for meeting\"}", database {userDB = new_userdb}, notification)
                            (x:_) -> ("{\"msg\": meeting time is" ++ show x ++ "}", removeBook id database, Nothing)
              (Nothing, _,_) -> ("{\"msg\": \"Error: seller does not exist!\"}", database, Nothing)
@@ -189,7 +190,7 @@ update (s, database) =
               case first <$> Map.lookup buyer userdb of
                 Nothing -> ("{\"msg\":\"buyer does not exist!\"}", database, Nothing)
                 Just userInfo -> 
-                      let notification = Just ("buyer " ++ buyer ++ " please respond.", token userInfo) in
+                      let notification = Just (token userInfo, "buyer " ++ buyer ++ " please respond.") in
                       ("{\"msg\": buyer " ++ buyer ++ " please respond}", database, notification)
          D.BuySearch ->
            let Just isbn = Map.lookup "isbn" dict in

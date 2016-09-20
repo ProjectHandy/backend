@@ -26,4 +26,4 @@ result3 = update (inputMBook2, db2)
 str = "[{\"time\":\"21:21\",\"date\":\"20001202\",\"place\":\"Good\"}]"
 inputProp3 = "propose?{\"props\":\"[{\\\"time\\\":\\\"21:21\\\",\\\"date\\\":\\\"20001202\\\",\\\"place\\\":\\\"Good\\\"}]\",\"pwd\":\"abc\",\"id\":\"0\",\"phone\":\"312314242\",\"buyer\":\"cggong\",\"email\":\"cggong@uchicago.edu\",\"seller\":\"cggong@uchicago.edu\",\"buyerToSeller\":\"true\"}"
 result4 = update (inputProp3, db3)
-(ret3,db4,_) = result4
+(ret3,db4,notif) = result4
