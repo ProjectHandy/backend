@@ -113,6 +113,7 @@ allMember :: Ord k => Map.Map k a -> [k] -> Bool
 allMember m xs = all (flip Map.member m) xs
 
 userInfoCheck map = allMember map ["user", "email", "pwd"]
+loginCheck map = allMember map ["user", "email", "pwd", "token"]
 bookInfoCheck map = allMember map ["isbn", "notes", "paper", "price"]
 proposeCheck map = allMember map ["id", "buyer", "phone", "props"]
 getPropCheck map = allMember map ["email"]
@@ -124,7 +125,7 @@ validPair :: (Action, ActionInfo) -> Bool
 validPair (action, info) =
   case action of
      Register     -> userInfoCheck info
-     Login        -> userInfoCheck info
+     Login        -> loginCheck info
      PostBookInfo -> bookInfoCheck info
      Propose      -> proposeCheck info
      GetProp      -> getPropCheck info
