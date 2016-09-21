@@ -222,7 +222,7 @@ update (s, database) =
                              let new_userdb = Map.adjust (\(userInfo,_,buyerInfo) -> (userInfo,(Nothing,new_dict),buyerInfo)) email userdb in
                              let new_db = database {userDB = new_userdb} in
                              let str = C.unpack $ encode prop in
-                             let s = "{\"msg\":\"getprop\"" ++ tail str in
+                             let s = "{\"msg\":\"getprop\"," ++ tail str in
                              (s,new_db, Just (token $ first userInfo, s))
                                     
 

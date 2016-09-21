@@ -11,7 +11,7 @@ end
 
 def send_apns(token, msg)
   token_hex = token.base64_to_hex
-  token_hex="006da301535d2be8471a098da971f4ef0213a693637ffb345ac6d6bde4078307"
+  #token_hex="006da301535d2be8471a098da971f4ef0213a693637ffb345ac6d6bde4078307"
   puts "Sending push notification, base64='#{token}', hex='#{token_hex}'"
   notification       = Apnotic::Notification.new(token_hex)
   notification.alert = msg
