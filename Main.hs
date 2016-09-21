@@ -148,11 +148,15 @@ update (s, database) =
                               ++ ",\"id\":" ++ show (show id) ++"}", db, Nothing)
          D.Login -> 
            let userInfo = getUserInfo dict in
+           let Just token = Map.lookup "token" dict in
            let (em, pd) = (email userInfo, pwd userInfo) in
            case Map.lookup em userdb of
              Nothing -> ("{\"msg\":\"Error: unregistered user\"}", database, Nothing)
              Just (userinfo,_,_) -> if pd == pwd userinfo
-                                    then ("{\"msg\":\"login\"}", database, Nothing) 
+                                    then
+                                      let modify (userInfo, sInfo, bInfo) = (userInfo {token = token}, sInfo, bInfo) in
+                                      let newUserdb = Map.adjust modify em userdb in
+                                      ("{\"msg\":\"login\"}", database {userDB = newUserdb}, Nothing) 
                                     else ("{\"msg\":\"Error: incorrect password\"}", database, Nothing)
          D.Propose -> 
            let Just id = read <$> Map.lookup "id" dict in
