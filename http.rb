@@ -1,16 +1,27 @@
 require 'apnotic'
 
-apns_connection = Apnotic::Connection.new(cert_path: "apns_certificate.pem", cert_pass: "")
+# For dev, use development. For production, use new. 
+$apns_connection = Apnotic::Connection.development(cert_path: "apns_certificate.pem")
+
+class String
+  def base64_to_hex
+    self.unpack("m0").first.unpack("H*").first
+  end
+end
 
 def send_apns(token, msg)
-  notification       = Apnotic::Notification.new(token)
+  token_hex = token.base64_to_hex
+  token_hex="006da301535d2be8471a098da971f4ef0213a693637ffb345ac6d6bde4078307"
+  puts "Sending push notification, base64='#{token}', hex='#{token_hex}'"
+  notification       = Apnotic::Notification.new(token_hex)
   notification.alert = msg
-  apns_connection.push(notification)
-  puts "Notification sent, token=#{token}, msg=#{msg}"
+  response = $apns_connection.push(notification)
+  puts "Notification sent, token_hex='#{token_hex}', msg='#{msg}', response.ok?='#{response.ok?}'"
 end
 
 at_exit do
-  apns_connection.close
+  puts "Closing connection with APNs server"
+  $apns_connection.close
 end
 
 require 'sinatra'
