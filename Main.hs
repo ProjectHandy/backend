@@ -178,7 +178,7 @@ update (s, database) =
                               let modify (userInfo, (_,s), b) = (userInfo, (Just t,s), b) in
                               let new_userdb = Map.adjust modify seller userdb in
                               let notification = Just (token userInfo, "Please choose a time for meeting.") in
-                              ("{\"msg\":\"please choose a time for meeting\"}", database {userDB = new_userdb}, notification)
+                              ("{\"msg\":\"propose\"}", database {userDB = new_userdb}, notification)
                    Just prop ->
                        case propInfo prop `intersect` decode_prop of
                            [] -> let (bookinfo, _) = tradeInfo in 
@@ -186,8 +186,9 @@ update (s, database) =
                                  let modify (userInfo, (_,s), b) = (userInfo, (Just t,s), b) in
                                  let new_userdb = Map.adjust modify seller userdb in
                                  let notification = Just (token userInfo, "Please choose a time for meeting.") in
-                                 ("{\"msg\":\"please choose a time for meeting\"}", database {userDB = new_userdb}, notification)
-                           (x:_) -> ("{\"msg\": meeting time is" ++ show x ++ "}", removeBook id database, Nothing)
+                                 ("{\"msg\":\"propose\"}", database {userDB = new_userdb}, notification)
+                           (x:_) -> let notification = Just (token userInfo, "meeting time is " ++ show x) in 
+                                    ("{\"msg\": \"propose\"}", removeBook id database, notification)
              (Nothing, _,_) -> ("{\"msg\": \"Error: seller does not exist!\"}", database, Nothing)
              (_, Nothing,_) -> ("{\"msg\": \"Error: id does not exist!\"}", database, Nothing)
            else 
@@ -195,7 +196,7 @@ update (s, database) =
                 Nothing -> ("{\"msg\":\"buyer does not exist!\"}", database, Nothing)
                 Just userInfo -> 
                       let notification = Just (token userInfo, "buyer " ++ buyer ++ " please respond.") in
-                      ("{\"msg\": buyer " ++ buyer ++ " please respond}", database, notification)
+                      ("{\"msg\":\"propose\"}", database, notification)
          D.BuySearch ->
            let Just isbn = Map.lookup "isbn" dict in
            case Map.lookup isbn bookdb of
