@@ -11,6 +11,8 @@ import System.Environment
 import Data.Aeson
 import Data.List
 import qualified Data.ByteString.Lazy.Char8 as C
+import qualified Data.Csv as Csv
+import qualified Data.Vector as V
 
 import Database
 import qualified Decode as D
@@ -119,8 +121,8 @@ first (x,_,_) = x
 second (_,x,_) = x
 third (_,_,x) = x
 
-update :: (String, DataBase) -> (String, DataBase, Maybe Notification)
-update (s, database) =
+update :: (String, DataBase, ClassDB) -> (String, DataBase, Maybe Notification)
+update (s, database, classdb) =
   case readP_to_S D.parseInput s of
      []    -> ("{\"msg\":\"Error: parse error.\"}", database, Nothing)
      (x:_) ->
@@ -206,10 +208,21 @@ update (s, database) =
                        (s , database, Nothing)
          D.MatchBook -> 
            let Just name = Map.lookup "indicator" dict in
+           if '/' `elem` name then
+           let Just splitIndex = elemIndex '/' name in
+           let (classNumber, section_) = splitAt splitIndex name in
+           let section = tail section_ in
+           case Map.lookup (classNumber, section) classdb of
+             Nothing -> ("{\"msg\": \"Error: cannot find class " ++ name ++ "\"}", database, Nothing)
+             Just classinfo -> 
+                   let bookInfoList = map (fromJust . flip Map.lookup bookdb) (bookID classinfo) in 
+                   ("{\"msg\":\"matchbook\", \"books\":" ++ (show $ C.unpack $ encode bookInfoList) ++ "}", database, Nothing)
+           else 
            let bookDict = Map.filter (\x -> title x == name) bookdb in
            case Map.null bookDict of
               True -> ("{\"msg\":\"Error: cannot find any book with title " ++ name ++ "\"}", database, Nothing)
               _    -> ("{\"msg\":\"matchbook\",\"items\":" ++ show (C.unpack $ encode $ Map.elems bookDict) ++ "}", database, Nothing)
+           
          D.GetProp ->
            let Just email = Map.lookup "email" dict in
            case Map.lookup email userdb of
@@ -225,8 +238,25 @@ update (s, database) =
                              let str = C.unpack $ encode prop in
                              let s = "{\"msg\":\"getprop\"" ++ tail str in
                              (s,new_db, Just (token $ first userInfo, s))
-                                    
+         D.MatchClass -> 
+            let Just name = Map.lookup "indicator" dict in
+            let classList = Map.toList $ Map.filterWithKey 
+                                         (\(cl, sect) _ -> cl == name) classdb in
+            ("{\"msg\":\"matchClass\",\"classes\":" ++ show (C.unpack $ encode classList) ++ "}", database, Nothing)
 
+combine strings dict = 
+  let (info, books) = splitAt 3 strings in
+   let isbnList = init $ books in
+    let classNumber : section : instr : _ = info in
+     Map.insert (classNumber, section) (ClassInfo {classNumber = classNumber, sect = section, instructor = instr, bookID = isbnList }) dict
+     
+getClassInfo :: IO ClassDB
+getClassInfo =
+             readFile "test_class_db.csv" >>= \classdb ->
+             let output = Csv.decode Csv.HasHeader (C.pack classdb) :: Either String (V.Vector [String]) in
+             case output of 
+               Left s -> error s
+               Right vec -> return $ V.foldr combine Map.empty vec
 
 main :: IO ()
 main = do
@@ -234,7 +264,8 @@ main = do
      dbString <- readFile file :: IO String
      let db = read dbString :: DataBase
      request <- head <$> getArgs :: IO String
-     let (reply, newdb, maybeNotif) = update (request, db)
+     classdb <- getClassInfo
+     let (reply, newdb, maybeNotif) = update (request, db, classdb)
      let notifObj = case maybeNotif of
            Just (token, contents) -> jsslobj [("token", token), ("contents", contents)]
            _ -> Bool False
@@ -243,7 +274,7 @@ main = do
      length dbString `seq` writeFile file (show newdb :: String)
      return ()
 
-
+{-
 updateList :: [String] -> DataBase -> ([String], DataBase)
 updateList xs db =
   case xs of
@@ -251,7 +282,7 @@ updateList xs db =
     (x:xs') -> let (s, newdb, _) = update (x,db) in
                let (ys, db') = updateList xs' newdb in
                (s:ys, db')
-{-               
+          
 main :: IO ()
 main = do
   let inFile = "test_input"

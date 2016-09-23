@@ -6,6 +6,7 @@ module Database where
 import qualified Data.Map.Strict as Map
 import GHC.Generics
 import Data.Aeson
+import qualified Data.Csv as Csv
 
 type UserName = String
 type EMailAddress = String
@@ -46,7 +47,14 @@ type BookDB = Map.Map BookID BookInfo
 
 data DataBase =
   DataBase { userDB :: UserDB, bookDB :: BookDB } deriving (Show,Eq,Read)
-  
+
+-- the first string indicates course number while the second indicates section number
+type Class = (String, String)
+data ClassInfo = ClassInfo { classNumber :: String, sect :: String, instructor :: String, bookID :: [BookID] } deriving (Show, Eq, Generic)
+type ClassDB = Map.Map Class ClassInfo
+
+data ClassInfo_ = ClassInfo_ { name :: String, instr :: String, section :: String, book :: [BookInfo] } deriving (Show, Eq, Generic)
+
 initialUserDB :: UserDB
 initialUserDB = Map.empty
 
@@ -67,3 +75,9 @@ instance ToJSON BookInfo where
     object ["title" .= title, "author" .= author, "isbn" .= isbn]
 
 instance ToJSON Info
+
+instance ToJSON ClassInfo where
+  toJSON (ClassInfo classNumber sect instructor bookID) =
+    object ["number" .= classNumber, "section" .= sect, "instructor" .= instructor]
+    
+instance ToJSON ClassInfo_
