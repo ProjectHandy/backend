@@ -246,9 +246,9 @@ update (s, database, classdb) =
 
 combine strings dict = 
   let (info, books) = splitAt 3 strings in
-   let isbnList = init $ books in
-    let classNumber : section : instr : _ = info in
-     Map.insert (classNumber, section) (ClassInfo {classNumber = classNumber, sect = section, instructor = instr, bookID = isbnList }) dict
+   let isbnList = takeWhile (/= "") books in
+    let classNumber : className : section : instr : _ = info in
+     Map.insert (classNumber, section) (ClassInfo {classNumber = classNumber, className = className, sect = section, instructor = instr, bookID = isbnList }) dict
      
 getClassInfo :: IO ClassDB
 getClassInfo =
