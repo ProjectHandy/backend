@@ -212,7 +212,7 @@ update (s, database, classdb) =
              Nothing -> ("{\"msg\": \"Error: cannot find class " ++ name ++ "\"}", database, Nothing)
              Just classinfo -> 
                    let bookInfoList = map (fromJust . flip Map.lookup bookdb) (bookID classinfo) in 
-                   ("{\"msg\":\"matchbook\", \"books\":" ++ (show $ C.unpack $ encode bookInfoList) ++ "}", database, Nothing)
+                   ("{\"msg\":\"matchbook\", \"items\":" ++ (show $ C.unpack $ encode bookInfoList) ++ "}", database, Nothing)
            else 
            let bookDict = Map.filter (\x -> title x == name) bookdb in
            case Map.null bookDict of
