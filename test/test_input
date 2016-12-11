@@ -1,0 +1,6 @@
+register?{"user": "cggong", "email": "cggong@uchicago.edu", "pwd": "329fjmsdjsdmfsd"}
+login?{"user": "cggong", "email" : "cggong@uchicago.edu", "pwd": "329fjmsdjsdmfsd"}
+postbookinfo?{"user": "cggong", "email" : "cggong@uchicago.edu", "pwd": "329fjmsdjsdmfsd", "isbn": "9783249237", "notes": 3, "price": 6.3, "paper" : 4, "notesdesc": "Some notes taken, but acceptable :)"}
+register?{"user":"alice", "email": "alice@uchicago.edu", "pwd" : "dsf"}
+login?{"user":"alice", "email" : "alice@uchicago.edu", "pwd": "dsf"}
+propose?{"id": 0, "buyer": "alice@uchicago.edu", "seller": "cggong@uchicago.edu", "phone" : "42523", "buyerToSeller" : "true", "props": "[{date: 20160401, time: 15:00, place: Reg}]"}
