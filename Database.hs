@@ -41,12 +41,12 @@ data UserInfo = UserInfo {user :: UserName, email :: EMailAddress, pwd :: Passwo
 type UserDB = Map.Map EMailAddress (UserInfo, SellerInfo, BuyerInfo)
 
 data BookInfo =
-  BookInfo { books :: Map.Map ID SellInfo, isbn :: String, title :: String, author :: String, lowest :: Float, highest :: Float} deriving (Show, Eq,Read) 
+  BookInfo { books :: Map.Map ID SellInfo, isbn :: String, title :: String, author :: String, lowest :: Float, highest :: Float} deriving (Show, Eq, Read) 
 
 type BookDB = Map.Map BookID BookInfo
 
 data DataBase =
-  DataBase { userDB :: UserDB, bookDB :: BookDB } deriving (Show,Eq,Read)
+  DataBase { userDB :: UserDB, bookDB :: BookDB } deriving (Show, Eq, Read)
 
 -- the first string indicates course number while the second indicates section number
 type Class = (String, String)

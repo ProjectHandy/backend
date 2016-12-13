@@ -8,6 +8,7 @@ import Text.ParserCombinators.ReadP
 import System.Environment
 import Data.Aeson
 import Data.List
+import Data.Char
 import qualified Data.ByteString.Lazy.Char8 as C
 
 import Database
@@ -201,9 +202,10 @@ update (s, database, classdb) =
              Nothing -> ("{\"msg\":\"Error : cannot find the required book\"}", database, Nothing)
              Just b -> let items = map snd $ Map.elems $ books b in
                        let s = "{\"msg\":\"buysearch\",\"items\":" ++ (show $ C.unpack $ encode items) ++ "}" in 
-                       (s , database, Nothing)
+                       (s, database, Nothing)
          D.MatchBook -> 
            let Just name = Map.lookup "indicator" dict in
+           -- search for books of a class section
            if '/' `elem` name then
            let Just splitIndex = elemIndex '/' name in
            let (classNumber, section_) = splitAt splitIndex name in
@@ -213,7 +215,15 @@ update (s, database, classdb) =
              Just classinfo -> 
                    let bookInfoList = map (fromJust . flip Map.lookup bookdb) (bookID classinfo) in 
                    ("{\"msg\":\"matchbook\", \"items\":" ++ (show $ C.unpack $ encode bookInfoList) ++ "}", database, Nothing)
-           else 
+           -- search for isbn
+           else if all isDigit name then
+           case Map.lookup name bookdb of
+             Nothing -> ("{\"msg\": \"Error: cannot find the required book\"}", database, Nothing)
+             Just b  -> ("{\"msg\":\"matchbook\",\"items\":" ++ 
+                         show (C.unpack $ encode $ [b]) ++ "}", 
+                         database, Nothing)
+           -- search for name
+           else
            let bookDict = Map.filter (\x -> title x == name) bookdb in
            case Map.null bookDict of
               True -> ("{\"msg\":\"Error: cannot find any book with title " ++ name ++ "\"}", database, Nothing)
