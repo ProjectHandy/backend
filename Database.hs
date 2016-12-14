@@ -15,19 +15,33 @@ type Password = String
 type BookID = String -- bookID refers to the ISBN 
 type ID = Int -- this is the unique identifier for each item
 
-data Info = Info {sellerName :: UserName,
-                  sellerEmail :: EMailAddress,
-                  bookid :: ID,
-                  note :: Int,
-                  paper :: Int,
-                  price :: Float}
-          deriving (Show, Eq, Read, Generic)
+data Info = Info {
+      sellerName :: UserName,
+      sellerEmail :: EMailAddress,
+      bookid :: ID,
+      note :: Int,
+      paper :: Int,
+      price :: Float,
+      removed :: Bool
+    }
+    deriving (Show, Eq, Read, Generic)
 
-data PropInfo = PropInfo { date :: String, time :: String, place :: String }
-                deriving (Show, Eq, Read, Generic)
+data PropInfo = PropInfo {
+  date :: String,
+  time :: String,
+  place :: String
+  }
+  deriving (Show, Eq, Read, Generic)
 
-data Prop = Prop { id :: ID, buyer :: EMailAddress, seller :: EMailAddress, propInfo :: [PropInfo], buyerToSeller :: Bool, chat :: Maybe String }
-            deriving (Show, Eq, Read, Generic)
+data Prop = Prop {
+  id :: ID,
+  buyer :: EMailAddress,
+  seller :: EMailAddress,
+  propInfo :: [PropInfo],
+  buyerToSeller :: Bool,
+  chat :: Maybe String
+  }
+  deriving (Show, Eq, Read, Generic)
 
 type TradeInfo = (Info, Maybe Prop)
 type SellInfo = (EMailAddress, Info) --for bookDB
@@ -36,23 +50,56 @@ type SellInfo = (EMailAddress, Info) --for bookDB
 type SellerInfo = (Maybe TradeInfo, Map.Map ID TradeInfo) -- for UserDB
 type BuyerInfo = Map.Map ID TradeInfo
 
-data UserInfo = UserInfo {user :: UserName, email :: EMailAddress, pwd :: Password, token :: String} deriving (Show, Eq, Read)
+data UserInfo = UserInfo {
+  user :: UserName,
+  email :: EMailAddress,
+  pwd :: Password,
+  token :: String
+  }
+  deriving (Show, Eq, Read)
 
 type UserDB = Map.Map EMailAddress (UserInfo, SellerInfo, BuyerInfo)
 
-data BookInfo =
-  BookInfo { books :: Map.Map ID SellInfo, isbn :: String, title :: String, author :: String, lowest :: Float, highest :: Float} deriving (Show, Eq, Read) 
+data BookInfo = BookInfo {
+  books :: Map.Map ID SellInfo,
+  isbn :: String,
+  title :: String,
+  author :: String,
+  lowest :: Float,
+  highest :: Float
+  }
+  deriving (Show, Eq, Read) 
 
 type BookDB = Map.Map BookID BookInfo
 
-data DataBase =
-  DataBase { userDB :: UserDB, bookDB :: BookDB } deriving (Show, Eq, Read)
+data DataBase = DataBase {
+  userDB :: UserDB,
+  bookDB :: BookDB
+  }
+  deriving (Show, Eq, Read)
 
 -- the first string indicates course number while the second indicates section number
 type Class = (String, String)
-data ClassInfo = ClassInfo { classNumber :: String, className :: String, sect :: String, instructor :: String, bookID :: [BookID] } deriving (Show, Eq, Generic)
+data ClassInfo = ClassInfo {
+  classNumber :: String,
+  className :: String,
+  sect :: String,
+  instructor :: String,
+  bookID :: [BookID]
+  }
+  deriving (Show, Eq, Generic)
 type ClassDB = Map.Map Class ClassInfo
 
+bookSize :: BookInfo -> Int
+bookSize bookInfo =
+  let dict = Map.filter (\(_, info) -> removed info == False) (books bookInfo) in
+    Map.size dict
+
+bookToInfo :: BookInfo -> [Info]
+bookToInfo bookInfo =
+  let dict = Map.filter (\(_, info) -> removed info == False) (books bookInfo) in
+    map snd $ Map.elems dict
+    
 initialUserDB :: UserDB
 initialUserDB = Map.empty
 

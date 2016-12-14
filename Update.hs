@@ -49,7 +49,16 @@ postBookInfo userInfo dict database =
        in
        let new_bookdb =
              if Map.member isbn' bookdb then Map.adjust bar isbn' bookdb
-             else let item = BookInfo {books = Map.singleton genID (email',info'), isbn = isbn', title = title', author = author', highest = price info', lowest = price info'} in Map.insert isbn' item bookdb
+             else let item = BookInfo {
+                        books = Map.singleton genID (email',info'),
+                        isbn = isbn',
+                        title = title',
+                        author = author',
+                        highest = price info',
+                        lowest = price info'
+                        }
+                  in
+                    Map.insert isbn' item bookdb
        in
        Just (genID, database { userDB = new_userdb, bookDB = new_bookdb })
     _ -> Nothing
@@ -72,13 +81,16 @@ getBookInfo dict =
   case (notes, paper, price, seller, email) of
     (Just notes, Just paper, Just price, Just seller, Just email) ->
       -- put dummy value for id here
-      Just $ Info {bookid = -1,
-                   note = read notes :: Int,
-                   paper = read paper :: Int,
-                   price = read price :: Float,
-                   sellerName = seller,
-                   sellerEmail = email}
-    _                                             -> Nothing
+      Just $ Info {
+      bookid = -1,
+      note = read notes :: Int,
+      paper = read paper :: Int,
+      price = read price :: Float,
+      sellerName = seller,
+      sellerEmail = email,
+      removed = False
+      }
+    _ -> Nothing
 
 getUserInfo :: Map.Map String String -> UserInfo
 getUserInfo dict =
@@ -99,19 +111,19 @@ removeBook x db =
   let bs = Map.filter (\b -> Map.member x $ books b) bookdb in
   case Map.toList bs of
     [b] -> let bookInfo = snd b in
-           let newbookDict = Map.delete x $ books bookInfo in
-           let newbookInfo = bookInfo {books = newbookDict} in
+           let newBooks = Map.adjust (\(e, info) -> (e, info {removed = True})) x (books bookInfo) in
+           let newbookInfo = bookInfo {books = newBooks} in
            let newBookdb = Map.adjust (const newbookInfo) (fst b) bookdb in 
-              let modify (userInfo, sellerInfo, buyerInfo) =
-                    let (t, dict) = sellerInfo in
-                    let newSellerInfo = (t, Map.delete x dict)
-                        newBuyerInfo  = Map.delete x buyerInfo
-                    in
-                    (userInfo, newSellerInfo, newBuyerInfo)
-              in
-              let sellers = Map.keys userdb in
-              let newUserdb = foldr (Map.adjust modify) userdb sellers in
-              db {bookDB = newBookdb, userDB = newUserdb}
+           let modify (userInfo, sellerInfo, buyerInfo) =
+                 let (t, dict) = sellerInfo in
+                   let newSellerInfo = (t, Map.delete x dict)
+                       newBuyerInfo  = Map.delete x buyerInfo
+                   in
+                     (userInfo, newSellerInfo, newBuyerInfo)
+           in
+           let sellers = Map.keys userdb in
+           let newUserdb = foldr (Map.adjust modify) userdb sellers in
+             db {bookDB = newBookdb, userDB = newUserdb}
     _      -> error $ "id " ++ show x ++ " is not unique!"
 
 first (x,_,_) = x
@@ -200,9 +212,13 @@ update (s, database, classdb) =
            let Just isbn = Map.lookup "isbn" dict in
            case Map.lookup isbn bookdb of
              Nothing -> ("{\"msg\":\"Error : cannot find the required book\"}", database, Nothing)
-             Just b -> let items = map snd $ Map.elems $ books b in
-                       let s = "{\"msg\":\"buysearch\",\"items\":" ++ (show $ C.unpack $ encode items) ++ "}" in 
-                       (s, database, Nothing)
+             Just b ->
+               if bookSize b == 0 then
+                 ("{\"msg\":\"Error : cannot find the required book\"}", database, Nothing)
+               else
+               let items = bookToInfo b in
+                 let s = "{\"msg\":\"buysearch\",\"items\":" ++ (show $ C.unpack $ encode items) ++ "}" in 
+                   (s, database, Nothing)
          D.MatchBook -> 
            let Just name = Map.lookup "indicator" dict in
            -- search for books of a class section
@@ -213,22 +229,28 @@ update (s, database, classdb) =
            case Map.lookup (classNumber, section) classdb of
              Nothing -> ("{\"msg\": \"Error: cannot find class " ++ name ++ "\"}", database, Nothing)
              Just classinfo -> 
-                   let bookInfoList = map (fromJust . flip Map.lookup bookdb) (bookID classinfo) in 
-                   ("{\"msg\":\"matchbook\", \"items\":" ++ (show $ C.unpack $ encode bookInfoList) ++ "}", database, Nothing)
+                   let bookInfoList = map (fromJust . flip Map.lookup bookdb) (bookID classinfo)
+                       items = concatMap bookToInfo bookInfoList
+                   in 
+                   ("{\"msg\":\"matchbook\", \"items\":" ++ (show $ C.unpack $ encode items) ++ "}", database, Nothing)
            -- search for isbn
            else if all isDigit name then
            case Map.lookup name bookdb of
              Nothing -> ("{\"msg\": \"Error: cannot find the required book\"}", database, Nothing)
-             Just b  -> ("{\"msg\":\"matchbook\",\"items\":" ++ 
-                         show (C.unpack $ encode $ [b]) ++ "}", 
-                         database, Nothing)
+             Just b  -> if bookSize b == 0
+               then ("{\"msg\": \"Error: cannot find the required book\"}", database, Nothing)
+               else let items = bookToInfo b in
+               ("{\"msg\":\"matchbook\",\"items\":" ++ 
+                 show (C.unpack $ encode $ items) ++ "}", 
+                 database, Nothing)
            -- search for name
            else
            let pred x = isInfixOf (map toLower name) (map toLower $ title x) in
            let bookDict = Map.filter pred bookdb in
-           case Map.null bookDict of
-              True -> ("{\"msg\":\"Error: cannot find any book with title " ++ name ++ "\"}", database, Nothing)
-              _    -> ("{\"msg\":\"matchbook\",\"items\":" ++ show (C.unpack $ encode $ Map.elems bookDict) ++ "}", database, Nothing)
+           let items = Map.foldr (\a acc -> bookToInfo a ++ acc) [] bookDict in
+           case items of
+              [] -> ("{\"msg\":\"Error: cannot find any book with title " ++ name ++ "\"}", database, Nothing)
+              _  -> ("{\"msg\":\"matchbook\",\"items\":" ++ show (C.unpack $ encode $ items) ++ "}", database, Nothing)
            
          D.GetProp ->
            let Just email = Map.lookup "email" dict in

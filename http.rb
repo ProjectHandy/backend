@@ -2,6 +2,7 @@ require 'apnotic'
 
 # For dev, use development. For production, use new. 
 $apns_connection = Apnotic::Connection.development(cert_path: "apns_certificate.pem")
+$bw = Apnotic::Connection.development(cert_path: "bwaps.pem")
 
 class String
   def base64_to_hex
@@ -15,8 +16,9 @@ def send_apns(token, msg)
   puts "Sending push notification, base64='#{token}', hex='#{token_hex}'"
   notification       = Apnotic::Notification.new(token_hex)
   notification.alert = msg
-  response = $apns_connection.push(notification)
-  puts "Notification sent, token_hex='#{token_hex}', msg='#{msg}', response.ok?='#{response.ok?}'"
+  conn = if token == "F1yy/6A4Fax/cIbnqRZZAwRpArwlQeznxc9lwRlbc5Q=" then $bw else $apns_connection end
+  response = conn.push(notification)
+  puts "Notification sent, token_hex='#{token_hex}', msg='#{msg}', response.ok?='#{response.ok?}', response.headers='#{response.headers}', response.body='#{response.body}'"
 end
 
 at_exit do
@@ -40,9 +42,15 @@ end
 
 set :port, 8080
 
+$first = false
+
 post "/handy/:action" do
   request.body.rewind
   data = params["action"] + "?" + request.body.read
+  if $first
+    data = %#propose?{"seller":"cggong@uchicago.edu","buyer":"bowenwang1996@uchicago.edu","pwd":"lordcharles","id":"22","user":"bowenwang","email":"bowenwang1996@uchicago.edu","phone":"312314242","buyerToSeller":"true","props":"[{\\"date\\":\\"20230101\\",\\"time\\":\\"02:58\\",\\"place\\":\\"Hello \\"}]"}#
+    $first = false
+  end
   puts "data=" + data
   FileUtils.cp("db", "db_bak")
   stdout, status = Open3.capture2("./Main '#{data}'")
@@ -61,6 +69,7 @@ post "/handy/:action" do
       puts "Database lost, use backup database"
     end
   end
+  STDOUT.flush
   ret
 end
 
@@ -128,6 +137,7 @@ def queryIsbn(isbn)
 end
 
 post "/images/:action" do
+  puts "got image action"
   request.body.rewind
   body_dict = request.body.read
   data = params["action"] + " *" + JSON.parse(body_dict)["args"].to_s
@@ -137,3 +147,5 @@ post "/images/:action" do
   puts "netRet=#{netRet}"
   netRet
 end
+
+puts "successfully started"
