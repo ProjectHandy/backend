@@ -229,28 +229,24 @@ update (s, database, classdb) =
            case Map.lookup (classNumber, section) classdb of
              Nothing -> ("{\"msg\": \"Error: cannot find class " ++ name ++ "\"}", database, Nothing)
              Just classinfo -> 
-                   let bookInfoList = map (fromJust . flip Map.lookup bookdb) (bookID classinfo)
-                       items = concatMap bookToInfo bookInfoList
-                   in 
-                   ("{\"msg\":\"matchbook\", \"items\":" ++ (show $ C.unpack $ encode items) ++ "}", database, Nothing)
+                   let bookInfoList = map (fromJust . flip Map.lookup bookdb) (bookID classinfo) in 
+                   ("{\"msg\":\"matchbook\", \"items\":" ++ (show $ C.unpack $ encode bookInfoList) ++ "}", database, Nothing)
            -- search for isbn
            else if all isDigit name then
            case Map.lookup name bookdb of
              Nothing -> ("{\"msg\": \"Error: cannot find the required book\"}", database, Nothing)
              Just b  -> if bookSize b == 0
                then ("{\"msg\": \"Error: cannot find the required book\"}", database, Nothing)
-               else let items = bookToInfo b in
-               ("{\"msg\":\"matchbook\",\"items\":" ++ 
-                 show (C.unpack $ encode $ items) ++ "}", 
+               else ("{\"msg\":\"matchbook\",\"items\":" ++ 
+                 show (C.unpack $ encode $ [b]) ++ "}", 
                  database, Nothing)
            -- search for name
            else
            let pred x = isInfixOf (map toLower name) (map toLower $ title x) in
            let bookDict = Map.filter pred bookdb in
-           let items = Map.foldr (\a acc -> bookToInfo a ++ acc) [] bookDict in
-           case items of
-              [] -> ("{\"msg\":\"Error: cannot find any book with title " ++ name ++ "\"}", database, Nothing)
-              _  -> ("{\"msg\":\"matchbook\",\"items\":" ++ show (C.unpack $ encode $ items) ++ "}", database, Nothing)
+           case Map.null bookDict of
+              True -> ("{\"msg\":\"Error: cannot find any book with title " ++ name ++ "\"}", database, Nothing)
+              _    -> ("{\"msg\":\"matchbook\",\"items\":" ++ show (C.unpack $ encode $ Map.elems bookDict) ++ "}", database, Nothing)
            
          D.GetProp ->
            let Just email = Map.lookup "email" dict in
