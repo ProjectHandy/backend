@@ -224,7 +224,8 @@ update (s, database, classdb) =
                          database, Nothing)
            -- search for name
            else
-           let bookDict = Map.filter (\x -> title x == name) bookdb in
+           let pred x = isInfixOf (map toLower name) (map toLower $ title x) in
+           let bookDict = Map.filter pred bookdb in
            case Map.null bookDict of
               True -> ("{\"msg\":\"Error: cannot find any book with title " ++ name ++ "\"}", database, Nothing)
               _    -> ("{\"msg\":\"matchbook\",\"items\":" ++ show (C.unpack $ encode $ Map.elems bookDict) ++ "}", database, Nothing)
