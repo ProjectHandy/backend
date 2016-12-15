@@ -16,7 +16,7 @@ def send_apns(token, msg)
   puts "Sending push notification, base64='#{token}', hex='#{token_hex}'"
   notification       = Apnotic::Notification.new(token_hex)
   notification.alert = msg
-  conn = if token == "F1yy/6A4Fax/cIbnqRZZAwRpArwlQeznxc9lwRlbc5Q=" then $bw else $apns_connection end
+  conn = if token == "BBr1/AukutyQLRair4H6IofhBs9X8CeJU1asdoeERrk=" then $bw else $apns_connection end
   response = conn.push(notification)
   puts "Notification sent, token_hex='#{token_hex}', msg='#{msg}', response.ok?='#{response.ok?}', response.headers='#{response.headers}', response.body='#{response.body}'"
 end
@@ -48,7 +48,7 @@ post "/handy/:action" do
   request.body.rewind
   data = params["action"] + "?" + request.body.read
   if $first
-    data = %#propose?{"seller":"cggong@uchicago.edu","buyer":"bowenwang1996@uchicago.edu","pwd":"lordcharles","id":"22","user":"bowenwang","email":"bowenwang1996@uchicago.edu","phone":"312314242","buyerToSeller":"true","props":"[{\\"date\\":\\"20230101\\",\\"time\\":\\"02:58\\",\\"place\\":\\"Hello \\"}]"}#
+    data = %#propose?{"seller":"cggong@uchicago.edu","buyer":"bowenwang1996@uchicago.edu","pwd":"lordcharles","id":"6","user":"bowenwang","email":"bowenwang1996@uchicago.edu","phone":"312314242","buyerToSeller":"true","props":"[{\\"date\\":\\"20230101\\",\\"time\\":\\"02:58\\",\\"place\\":\\"Hello \\"}]"}#
     $first = false
   end
   puts "data=" + data

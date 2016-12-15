@@ -178,17 +178,22 @@ update (s, database, classdb) =
            let Just flag = (\x -> if x == "true" then True else False) <$> Map.lookup "buyerToSeller" dict in
            let chat = Map.lookup "chat" dict in
            if flag then 
-           let userInfo = first <$> Map.lookup seller userdb in
+           let sellerUserInfo = first <$> Map.lookup seller userdb
+               buyerUserInfo = first <$> Map.lookup buyer userdb
+           in
            let sellerInfo = second <$> Map.lookup seller userdb in
            let tradeInfo = (snd <$> sellerInfo) >>= (Map.lookup id) in
-           case (sellerInfo, tradeInfo, userInfo) of
-             (Just sellerInfo, Just tradeInfo, Just userInfo) -> 
+           case (sellerInfo, tradeInfo, sellerUserInfo, buyerUserInfo) of
+             (Just sellerInfo, Just tradeInfo, Just userInfo, Just bUserInfo) -> 
                 case snd tradeInfo of
                    Nothing -> let bookinfo = fst tradeInfo in
                               let t = (bookinfo, Just $ Prop {Database.id = id, buyer = buyer, seller = seller, buyerToSeller = flag, chat = chat, propInfo = decode_prop}) in
                               let modify (userInfo, (_,s), b) = (userInfo, (Just t,s), b) in
                               let new_userdb = Map.adjust modify seller userdb in
-                              let notification = Just (token userInfo, "Please choose a time for meeting.") in
+                              let notification = case (decode_prop, chat) of
+                                    ([], Just _) -> Just (token userInfo, user bUserInfo ++ " send you a message.")
+                                    _            -> Just (token userInfo, "Please choose a time for meeting.")
+                              in
                               ("{\"msg\":\"propose\"}", database {userDB = new_userdb}, notification)
                    Just prop ->
                        case propInfo prop `intersect` decode_prop of
@@ -196,17 +201,29 @@ update (s, database, classdb) =
                                  let t = (bookinfo, Just $ Prop {Database.id = id, buyer = buyer, seller = seller, buyerToSeller = flag, chat = chat, propInfo = decode_prop}) in
                                  let modify (userInfo, (_,s), b) = (userInfo, (Just t,s), b) in
                                  let new_userdb = Map.adjust modify seller userdb in
-                                 let notification = Just (token userInfo, "Please choose a time for meeting.") in
+                                 let notification = case (decode_prop, chat) of
+                                       ([], Just _) -> Just (token userInfo, user bUserInfo ++ " send you a message.")
+                                       _            -> Just (token userInfo, "Please choose a time for meeting.")
+                                 in
                                  ("{\"msg\":\"propose\"}", database {userDB = new_userdb}, notification)
+                           -- if there is intersection, the proposal must be an actual proposal, not a chat.
                            (x:_) -> let notification = Just (token userInfo, "meeting time is " ++ show x) in 
                                     ("{\"msg\": \"propose\"}", removeBook id database, notification)
-             (Nothing, _,_) -> ("{\"msg\": \"Error: seller does not exist!\"}", database, Nothing)
-             (_, Nothing,_) -> ("{\"msg\": \"Error: id does not exist!\"}", database, Nothing)
-           else 
-              case first <$> Map.lookup buyer userdb of
-                Nothing -> ("{\"msg\":\"buyer does not exist!\"}", database, Nothing)
-                Just userInfo -> 
-                      let notification = Just (token userInfo, "buyer " ++ buyer ++ " please respond.") in
+             (Nothing, _, _, _) -> ("{\"msg\": \"Error: seller does not exist!\"}", database, Nothing)
+             (_, Nothing, _, _) -> ("{\"msg\": \"Error: id does not exist!\"}", database, Nothing)
+             (_, _, _, Nothing) -> ("{\"msg\": \"Error: buyer does not exist!\"}", database, Nothing)
+           else
+             let sellerUserInfo = first <$> Map.lookup seller userdb
+                 buyerUserInfo  = first <$> Map.lookup buyer userdb
+             in
+              case (sellerUserInfo, buyerUserInfo) of
+                (Nothing, _) -> ("{\"msg\":\"Error: seller does not exist!\"}", database, Nothing)
+                (_, Nothing) -> ("{\"msg\":\"Error: buyer does not exist!\"}", database, Nothing)
+                (Just sUserInfo, Just bUserInfo) -> 
+                      let notification = case (decode_prop, chat) of
+                           ([], Just _) -> Just (token bUserInfo, user sUserInfo ++ " send you a message.")
+                           _            ->  Just (token bUserInfo, "buyer " ++ buyer ++ " please respond.")
+                      in
                       ("{\"msg\":\"propose\"}", database, notification)
          D.BuySearch ->
            let Just isbn = Map.lookup "isbn" dict in
