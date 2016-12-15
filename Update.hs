@@ -191,7 +191,7 @@ update (s, database, classdb) =
                               let modify (userInfo, (_,s), b) = (userInfo, (Just t,s), b) in
                               let new_userdb = Map.adjust modify seller userdb in
                               let notification = case (decode_prop, chat) of
-                                    ([], Just _) -> Just (token userInfo, user bUserInfo ++ " send you a message.")
+                                    ([], Just chat) -> Just (token userInfo, user bUserInfo ++ ": " ++ chat)
                                     _            -> Just (token userInfo, "Please choose a time for meeting.")
                               in
                               ("{\"msg\":\"propose\"}", database {userDB = new_userdb}, notification)
@@ -202,7 +202,7 @@ update (s, database, classdb) =
                                  let modify (userInfo, (_,s), b) = (userInfo, (Just t,s), b) in
                                  let new_userdb = Map.adjust modify seller userdb in
                                  let notification = case (decode_prop, chat) of
-                                       ([], Just _) -> Just (token userInfo, user bUserInfo ++ " send you a message.")
+                                       ([], Just chat) -> Just (token userInfo, user bUserInfo ++ ": " ++ chat)
                                        _            -> Just (token userInfo, "Please choose a time for meeting.")
                                  in
                                  ("{\"msg\":\"propose\"}", database {userDB = new_userdb}, notification)
@@ -221,7 +221,7 @@ update (s, database, classdb) =
                 (_, Nothing) -> ("{\"msg\":\"Error: buyer does not exist!\"}", database, Nothing)
                 (Just sUserInfo, Just bUserInfo) -> 
                       let notification = case (decode_prop, chat) of
-                           ([], Just _) -> Just (token bUserInfo, user sUserInfo ++ " send you a message.")
+                           ([], Just chat) -> Just (token bUserInfo, user sUserInfo ++ ": " ++ chat)
                            _            ->  Just (token bUserInfo, "buyer " ++ buyer ++ " please respond.")
                       in
                       ("{\"msg\":\"propose\"}", database, notification)
