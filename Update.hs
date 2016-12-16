@@ -175,7 +175,7 @@ update (s, database, classdb) =
            let Just decode_prop = decode (C.pack prop) :: Maybe [PropInfo] in
            let Just seller = Map.lookup "seller" dict in
            let Just buyer = Map.lookup "buyer" dict in
-           let Just flag = (\x -> if x == "true" then True else False) <$> Map.lookup "buyerToSeller" dict in
+           let Just flag = read <$> Map.lookup "buyerToSeller" dict in
            let chat = Map.lookup "chat" dict in
            if flag then 
            let sellerUserInfo = first <$> Map.lookup seller userdb
@@ -186,15 +186,18 @@ update (s, database, classdb) =
            case (sellerInfo, tradeInfo, sellerUserInfo, buyerUserInfo) of
              (Just sellerInfo, Just tradeInfo, Just userInfo, Just bUserInfo) -> 
                 case snd tradeInfo of
+                   -- if Maybe Prop is Nothing, then the book hasn't been requested,
+                   -- so we remove the requested book here
                    Nothing -> let bookinfo = fst tradeInfo in
                               let t = (bookinfo, Just $ Prop {Database.id = id, buyer = buyer, seller = seller, buyerToSeller = flag, chat = chat, propInfo = decode_prop}) in
                               let modify (userInfo, (_,s), b) = (userInfo, (Just t,s), b) in
                               let new_userdb = Map.adjust modify seller userdb in
+                              let newdb = removeBook id (database {userDB = new_userdb}) in
                               let notification = case (decode_prop, chat) of
                                     ([], Just chat) -> Just (token userInfo, user bUserInfo ++ ": " ++ chat)
                                     _            -> Just (token userInfo, "Please choose a time for meeting.")
                               in
-                              ("{\"msg\":\"propose\"}", database {userDB = new_userdb}, notification)
+                              ("{\"msg\":\"propose\"}", newdb, notification)
                    Just prop ->
                        case propInfo prop `intersect` decode_prop of
                            [] -> let (bookinfo, _) = tradeInfo in 
@@ -208,7 +211,7 @@ update (s, database, classdb) =
                                  ("{\"msg\":\"propose\"}", database {userDB = new_userdb}, notification)
                            -- if there is intersection, the proposal must be an actual proposal, not a chat.
                            (x:_) -> let notification = Just (token userInfo, "meeting time is " ++ show x) in 
-                                    ("{\"msg\": \"propose\"}", removeBook id database, notification)
+                                    ("{\"msg\": \"propose\"}", database, notification)
              (Nothing, _, _, _) -> ("{\"msg\": \"Error: seller does not exist!\"}", database, Nothing)
              (_, Nothing, _, _) -> ("{\"msg\": \"Error: id does not exist!\"}", database, Nothing)
              (_, _, _, Nothing) -> ("{\"msg\": \"Error: buyer does not exist!\"}", database, Nothing)
