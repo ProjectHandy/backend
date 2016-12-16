@@ -18,7 +18,7 @@ type Notification = (String, String)
 
 register :: UserInfo -> UserDB -> UserDB
 register userInfo =
-  Map.insert (email userInfo) (userInfo, (Nothing, Map.empty), Map.empty)
+  Map.insert (email userInfo) (userInfo, ([], Map.empty), ([], Map.empty))
 
 extractPwd :: EMailAddress -> DataBase -> Password
 extractPwd email db =
@@ -39,7 +39,7 @@ postBookInfo userInfo dict database =
        let id = bookid info' in
        let sellerInfo = (info', Nothing) in
        let (userdb, bookdb) = (userDB database, bookDB database) in
-       let foo (userInfo, (m,seller), buyer) = (userInfo, (m, Map.insert id sellerInfo seller), buyer) in    
+       let foo (userInfo, (l, dict), buyer) = (userInfo, (l, Map.insert id sellerInfo dict), buyer) in    
        let new_userdb = Map.adjust foo email' userdb in
        let bar bookinfo =
                let curPrice = price info' in
@@ -116,9 +116,11 @@ removeBook x db =
            let newBookdb = Map.adjust (const newbookInfo) (fst b) bookdb in 
            let modify (userInfo, sellerInfo, buyerInfo) =
                  let modifyTradeInfo x info = Map.adjust (\(info, p) -> (info {removed = True}, p)) x info in
-                 let (t, dict) = sellerInfo in
-                   let newSellerInfo = (t, modifyTradeInfo x dict)
-                       newBuyerInfo  = modifyTradeInfo x buyerInfo
+                 let (l1, dict1) = sellerInfo
+                     (l2, dict2) = buyerInfo
+                 in
+                   let newSellerInfo = (l1, modifyTradeInfo x dict1)
+                       newBuyerInfo  = (l2, modifyTradeInfo x dict2)
                    in
                      (userInfo, newSellerInfo, newBuyerInfo)
            in
@@ -191,7 +193,7 @@ update (s, database, classdb) =
                    -- so we remove the requested book here
                    Nothing -> let bookinfo = fst tradeInfo in
                               let t = (bookinfo, Just $ Prop {Database.id = id, buyer = buyer, seller = seller, buyerToSeller = flag, chat = chat, propInfo = decode_prop}) in
-                              let modify (userInfo, (_,s), b) = (userInfo, (Just t,s), b) in
+                              let modify (userInfo, (l,s), b) = (userInfo, (t:l,s), b) in
                               let new_userdb = Map.adjust modify seller userdb in
                               let newdb = removeBook id (database {userDB = new_userdb}) in
                               let notification = case (decode_prop, chat) of
@@ -203,7 +205,7 @@ update (s, database, classdb) =
                        case propInfo prop `intersect` decode_prop of
                            [] -> let (bookinfo, _) = tradeInfo in 
                                  let t = (bookinfo, Just $ Prop {Database.id = id, buyer = buyer, seller = seller, buyerToSeller = flag, chat = chat, propInfo = decode_prop}) in
-                                 let modify (userInfo, (_,s), b) = (userInfo, (Just t,s), b) in
+                                 let modify (userInfo, (l,s), b) = (userInfo, (t:l,s), b) in
                                  let new_userdb = Map.adjust modify seller userdb in
                                  let notification = case (decode_prop, chat) of
                                        ([], Just chat) -> Just (token userInfo, user bUserInfo ++ ": " ++ chat)
@@ -219,16 +221,26 @@ update (s, database, classdb) =
            else
              let sellerUserInfo = first <$> Map.lookup seller userdb
                  buyerUserInfo  = first <$> Map.lookup buyer userdb
+                 buyerInfo = second <$> Map.lookup buyer userdb
+                 tradeInfo = (snd <$> buyerInfo) >>= (Map.lookup id)
              in
               case (sellerUserInfo, buyerUserInfo) of
                 (Nothing, _) -> ("{\"msg\":\"Error: seller does not exist!\"}", database, Nothing)
                 (_, Nothing) -> ("{\"msg\":\"Error: buyer does not exist!\"}", database, Nothing)
-                (Just sUserInfo, Just bUserInfo) -> 
+                (Just sUserInfo, Just bUserInfo) ->
+                      let Just bInfo = buyerInfo
+                          Just tInfo = tradeInfo
+                      in
+                      let bookinfo = fst tInfo in
+                      let t = (bookinfo, Just $ Prop {Database.id = id, buyer = buyer, seller = seller, buyerToSeller = flag, chat = chat, propInfo = decode_prop}) in
+                      let modify (userInfo, (l,s), b) = (userInfo, (t:l,s), b) in
+                      let new_userdb = Map.adjust modify buyer userdb in
+                      let newdb = database {userDB = new_userdb} in
                       let notification = case (decode_prop, chat) of
                            ([], Just chat) -> Just (token bUserInfo, user sUserInfo ++ ": " ++ chat)
                            _            ->  Just (token bUserInfo, "buyer " ++ buyer ++ " please respond.")
                       in
-                      ("{\"msg\":\"propose\"}", database, notification)
+                      ("{\"msg\":\"propose\"}", newdb, notification)
          D.BuySearch ->
            let Just isbn = Map.lookup "isbn" dict in
            case Map.lookup isbn bookdb of
@@ -274,27 +286,36 @@ update (s, database, classdb) =
            case Map.lookup email userdb of
               Nothing -> ("{\"msg\":\"Error: unregistered user\"}", database, Nothing)
               Just userInfo -> 
-                 let (t, dict) = second userInfo in
-                 case t of
-                   Nothing -> ("{\"msg\":\"getprop\"}", database, Nothing)
-                   Just t -> let (info, prop) = t in
-                             let new_dict = Map.insert (bookid info) t dict in
-                             let new_userdb = Map.adjust (\(userInfo,_,buyerInfo) -> (userInfo,(Nothing,new_dict),buyerInfo)) email userdb in
-                             let new_db = database {userDB = new_userdb} in
-                             let str = C.unpack $ encode prop in
-                             let s = "{\"msg\":\"getprop\"," ++ tail str in
-                             (s,new_db, Just (token $ first userInfo, s))
+                 let (l1, dict1) = second userInfo
+                     (l2, dict2) = third userInfo
+                 in
+                 let modifyTradeInfo flag t l =
+                       let (info, prop) = t
+                           dict = if flag then dict1 else dict2
+                       in
+                       let new_dict = Map.insert (bookid info) t dict in
+                       let new_userdb = if flag
+                             then Map.adjust
+                                 (\(userInfo, _, buyerInfo) -> (userInfo, (l, new_dict), buyerInfo))
+                                 email userdb
+                             else Map.adjust
+                                 (\(userInfo, sellerInfo, _) -> (userInfo, sellerInfo, (l,new_dict)))
+                                 email userdb
+                       in
+                       let new_db = database {userDB = new_userdb} in
+                       let str = C.unpack $ encode prop in
+                       let s = "{\"msg\":\"getprop\"," ++ tail str in
+                         (s,new_db, Just (token $ first userInfo, s))
+                 in
+                 case (l1, l2) of
+                   ([], []) -> ("{\"msg\":\"getprop\"}", database, Nothing)
+                   (t:l, _) -> modifyTradeInfo True t l
+                   (_, t:l) -> modifyTradeInfo False t l
          D.MatchClass -> 
             let Just name = Map.lookup "indicator" dict in
             let classList = Map.toList $ Map.filterWithKey 
                                          (\(cl, sect) _ -> cl == name) classdb in
             ("{\"msg\":\"matchClass\",\"classes\":" ++ show (C.unpack $ encode classList) ++ "}", database, Nothing)
-
-combine strings dict = 
-  let (info, books) = splitAt 3 strings in
-   let isbnList = takeWhile (/= "") books in
-    let classNumber : className : section : instr : _ = info in
-     Map.insert (classNumber, section) (ClassInfo {classNumber = classNumber, className = className, sect = section, instructor = instr, bookID = isbnList }) dict
 
 {-
 getClassInfo :: IO ClassDB

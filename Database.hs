@@ -46,9 +46,9 @@ data Prop = Prop {
 type TradeInfo = (Info, Maybe Prop)
 type SellInfo = (EMailAddress, Info) --for bookDB
 
---the maybe tradeinfo signifies whether there is an incoming notification
-type SellerInfo = (Maybe TradeInfo, Map.Map ID TradeInfo) -- for UserDB
-type BuyerInfo = Map.Map ID TradeInfo
+--the list of tradeinfo represents the incoming notifications
+type SellerInfo = ([TradeInfo], Map.Map ID TradeInfo) -- for UserDB
+type BuyerInfo = ([TradeInfo], Map.Map ID TradeInfo)
 
 data UserInfo = UserInfo {
   user :: UserName,
