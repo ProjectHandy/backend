@@ -175,7 +175,7 @@ update (s, database, classdb) =
            let Just decode_prop = decode (C.pack prop) :: Maybe [PropInfo] in
            let Just seller = Map.lookup "seller" dict in
            let Just buyer = Map.lookup "buyer" dict in
-           let Just flag = read <$> Map.lookup "buyerToSeller" dict in
+           let Just flag = (\x -> x == "true") <$> Map.lookup "buyerToSeller" dict in
            let chat = Map.lookup "chat" dict in
            if flag then 
            let sellerUserInfo = first <$> Map.lookup seller userdb
