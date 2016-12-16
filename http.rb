@@ -42,13 +42,14 @@ end
 
 set :port, 8080
 
-$first = false
+$first = true
 
 post "/handy/:action" do
   request.body.rewind
   data = params["action"] + "?" + request.body.read
   if $first
-    data = %#propose?{"seller":"cggong@uchicago.edu","buyer":"bowenwang1996@uchicago.edu","pwd":"lordcharles","id":"6","user":"bowenwang","email":"bowenwang1996@uchicago.edu","phone":"312314242","buyerToSeller":"true","props":"[{\\"date\\":\\"20230101\\",\\"time\\":\\"02:58\\",\\"place\\":\\"Hello \\"}]"}#
+    #    data = %#propose?{"seller":"cggong@uchicago.edu","buyer":"bowenwang1996@uchicago.edu","pwd":"lordcharles","id":"6","user":"bowenwang","email":"bowenwang1996@uchicago.edu","phone":"312314242","buyerToSeller":"true","props":"[{\\"date\\":\\"20230101\\",\\"time\\":\\"02:58\\",\\"place\\":\\"Hello \\"}]"}#
+    data = %#propose?{"seller":"cggong@uchicago.edu","chat":"Hello","buyer":"bowenwang1996@uchicago.edu","pwd":"abc","id":"0","user":"cggong","email":"cggong@uchicago.edu","phone":"","buyerToSeller":"true","props":"[]"}#
     $first = false
   end
   puts "data=" + data

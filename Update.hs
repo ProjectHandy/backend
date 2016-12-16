@@ -115,9 +115,10 @@ removeBook x db =
            let newbookInfo = bookInfo {books = newBooks} in
            let newBookdb = Map.adjust (const newbookInfo) (fst b) bookdb in 
            let modify (userInfo, sellerInfo, buyerInfo) =
+                 let modifyTradeInfo x info = Map.adjust (\(info, p) -> (info {removed = True}, p)) x info in
                  let (t, dict) = sellerInfo in
-                   let newSellerInfo = (t, Map.delete x dict)
-                       newBuyerInfo  = Map.delete x buyerInfo
+                   let newSellerInfo = (t, modifyTradeInfo x dict)
+                       newBuyerInfo  = modifyTradeInfo x buyerInfo
                    in
                      (userInfo, newSellerInfo, newBuyerInfo)
            in
