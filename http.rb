@@ -24,6 +24,7 @@ end
 at_exit do
   puts "Closing connection with APNs server"
   $apns_connection.close
+  $bw.close
 end
 
 require 'sinatra'
