@@ -305,7 +305,7 @@ update (s, database, classdb) =
                        let new_db = database {userDB = new_userdb} in
                        let str = C.unpack $ encode prop in
                        let s = "{\"msg\":\"getprop\"," ++ tail str in
-                         (s,new_db, Just (token $ first userInfo, s))
+                         (s,new_db, Nothing)
                  in
                  case (l1, l2) of
                    ([], []) -> ("{\"msg\":\"getprop\"}", database, Nothing)
