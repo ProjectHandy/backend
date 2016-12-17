@@ -103,7 +103,7 @@ test2 = readP_to_S parseInput "login?{\"user\": \"cggong\", \"email\" : \"cggong
 
 test3 = readP_to_S parseInput "postbookinfo?{\"user\": \"cggong\", \"email\" : \"cggong@uchicago.edu\", \"pwd\": \"sfdinu9i323\", \"isbn\": \"9783249237\", \"notes\": 3, \"price\": 6.3, \"notesdesc\": \"Some notes taken, but acceptable :)\"}"
 
-test4 = readP_to_S parseInput "propose?{\"id\": 1, \"buyer\": \"alice\", \"seller\": \"cggong\", \"buyerToSeller\" : \"true\", \"props\": \"[{date: 20160401, time: 15:00, place: \\\"Reg}]\"}"
+test4 = readP_to_S parseInput "propose?{\"id\": \"1\", \"buyer\": \"alice\", \"seller\": \"cggong\", \"buyerToSeller\" : \"true\", \"props\": \"[{date: 20160401, time: 15:00, place: \\\"Reg}]\"}"
 
 test5 = readP_to_S parseInput "propose?{\"props\":\"[{\\\"time\\\":\\\"13:58\\\",\\\"date\\\":\\\"20001202\\\",\\\"place\\\":\\\"He \\\"}]\",\"pwd\":\"abc\",\"id\":\"0\",\"phone\":\"312314242\",\"buyer\":\"cggong@uchicago.edu\",\"user\":\"cggong\",\"email\":\"cggong@uchicago.edu\",\"seller\":\"cggong@uchicago.edu\",\"buyerToSeller\":\"true\"}"
 

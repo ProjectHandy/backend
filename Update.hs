@@ -223,7 +223,7 @@ update (s, database, classdb) =
            else
              let sellerUserInfo = first <$> Map.lookup seller userdb
                  buyerUserInfo  = first <$> Map.lookup buyer userdb
-                 buyerInfo = second <$> Map.lookup buyer userdb
+                 buyerInfo = third <$> Map.lookup buyer userdb
                  tradeInfo = (snd <$> buyerInfo) >>= (Map.lookup id)
              in
               case (sellerUserInfo, buyerUserInfo) of
@@ -318,6 +318,12 @@ update (s, database, classdb) =
             let classList = Map.toList $ Map.filterWithKey 
                                          (\(cl, sect) _ -> cl == name) classdb in
             ("{\"msg\":\"matchClass\",\"classes\":" ++ show (C.unpack $ encode classList) ++ "}", database, Nothing)
+
+combine strings dict =
+    let (info, books) = splitAt 3 strings in
+      let isbnList = takeWhile (/= "") books in
+        let classNumber : className : section : instr : _ = info in
+          Map.insert (classNumber, section) (ClassInfo {classNumber = classNumber, className = className, sect = section, instructor = instr, bookID = isbnList }) dict
 
 {-
 getClassInfo :: IO ClassDB

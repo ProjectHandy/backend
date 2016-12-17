@@ -23,11 +23,6 @@ jssobj = jsobj . fmap (fmap String)
 jsslobj :: [(Text.Text, String)] -> Value
 jsslobj = jssobj . fmap (fmap Text.pack)
 
-combine strings dict =
-    let (info, books) = splitAt 3 strings in
-      let isbnList = takeWhile (/= "") books in
-        let classNumber : className : section : instr : _ = info in
-          Map.insert (classNumber, section) (ClassInfo {classNumber = classNumber, className = className, sect = section, instructor = instr, bookID = isbnList }) dict
                       
 getClassInfo :: IO ClassDB
 getClassInfo =
