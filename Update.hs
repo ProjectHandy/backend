@@ -190,10 +190,10 @@ update (s, database, classdb) =
              (Just sellerInfo, Just tradeInfo, Just userInfo, Just bUserInfo) -> 
                 case snd tradeInfo of
                    -- if Maybe Prop is Nothing, then the book hasn't been requested,
-                   -- so we remove the requested book here
+                   -- so we remove the requested book here and update buyer info
                    Nothing -> let bookinfo = fst tradeInfo in
                               let t = (bookinfo, Just $ Prop {Database.id = id, buyer = buyer, seller = seller, buyerToSeller = flag, chat = chat, propInfo = decode_prop}) in
-                              let modify (userInfo, (l,s), b) = (userInfo, (t:l,s), b) in
+                              let modify (userInfo, (l1,s), (l2,b)) = (userInfo, (t:l1,s), (l2, Map.insert id (bookinfo, Nothing) b)) in
                               let new_userdb = Map.adjust modify seller userdb in
                               let newdb = removeBook id (database {userDB = new_userdb}) in
                               let notification = case (decode_prop, chat) of
