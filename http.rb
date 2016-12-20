@@ -16,7 +16,8 @@ def send_apns(token, msg)
   puts "Sending push notification, base64='#{token}', hex='#{token_hex}'"
   notification       = Apnotic::Notification.new(token_hex)
   notification.alert = msg
-  conn = if token == "3HGF/DN4khDRD6wjViqWbYoeNCMFiIZj0did/4WgFvk=" then $bw else $apns_connection end
+  notification.content-available = 1
+  conn = if token == "VFobf2PzHyDhlfwJ1FduCBGTMWlXHkh6AkSonc3dfnE=" then $bw else $apns_connection end
   response = conn.push(notification)
   puts "Notification sent, token_hex='#{token_hex}', msg='#{msg}', response.ok?='#{response.ok?}', response.headers='#{response.headers}', response.body='#{response.body}'"
 end

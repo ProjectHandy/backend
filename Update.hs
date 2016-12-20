@@ -193,7 +193,7 @@ update (s, database, classdb) =
                    -- so we remove the requested book here and update buyer info
                    Nothing -> let bookinfo = fst tradeInfo in
                               let t = (bookinfo, Just $ Prop {Database.id = id, buyer = buyer, seller = seller, buyerToSeller = flag, chat = chat, propInfo = decode_prop}) in
-                              let modifySeller (userInfo, (l,s), b) = (userInfo, (t:l,s), b)
+                              let modifySeller (userInfo, (l,s), b) = (userInfo, (l++[t],s), b)
                                   modifyBuyer (userInfo, s, (l,b)) = (userInfo, s, (l, Map.insert id (bookinfo, Nothing) b))
                               in
                               let new_userdb = Map.adjust modifyBuyer buyer $ Map.adjust modifySeller seller userdb in
@@ -207,7 +207,7 @@ update (s, database, classdb) =
                        case propInfo prop `intersect` decode_prop of
                            [] -> let (bookinfo, _) = tradeInfo in 
                                  let t = (bookinfo, Just $ Prop {Database.id = id, buyer = buyer, seller = seller, buyerToSeller = flag, chat = chat, propInfo = decode_prop}) in
-                                 let modify (userInfo, (l,s), b) = (userInfo, (t:l,s), b) in
+                                 let modify (userInfo, (l,s), b) = (userInfo, (l++[t],s), b) in
                                  let new_userdb = Map.adjust modify seller userdb in
                                  let notification = case (decode_prop, chat) of
                                        ([], Just chat) -> Just (token userInfo, user bUserInfo ++ ": " ++ chat)
@@ -235,7 +235,7 @@ update (s, database, classdb) =
                       in
                       let bookinfo = fst tInfo in
                       let t = (bookinfo, Just $ Prop {Database.id = id, buyer = buyer, seller = seller, buyerToSeller = flag, chat = chat, propInfo = decode_prop}) in
-                      let modify (userInfo, (l,s), b) = (userInfo, (t:l,s), b) in
+                      let modify (userInfo, (l,s), b) = (userInfo, (l++[t],s), b) in
                       let new_userdb = Map.adjust modify buyer userdb in
                       let newdb = database {userDB = new_userdb} in
                       let notification = case (decode_prop, chat) of
